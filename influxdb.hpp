@@ -47,11 +47,11 @@ namespace influxdb_cpp {
         detail::tag_caller& meas(const string& m) {
             lines_.clear();
             lines_.reserve(0x100);
-            return _meas(m);
+            return _m(m);
         }
 
     protected:
-        detail::tag_caller& _meas(const string& m) {
+        detail::tag_caller& _m(const string& m) {
             _escape(m, ", ");
             return (detail::tag_caller&)*this;
         }
@@ -136,7 +136,7 @@ namespace influxdb_cpp {
         class nl_caller : public builder
         {
         public:
-            detail::tag_caller& meas(const string& m)                            { return builder::_meas(m); }
+            detail::tag_caller& meas(const string& m)                            { return builder::_m(m); }
         };
 
         class tag_caller : public builder
@@ -267,7 +267,7 @@ namespace influxdb_cpp {
                                 }
                             case false:
                                 while(content_length > 0 && !_NO_MORE()) {
-                                    content_length -= (iv[1].iov_len = (content_length < (int)iv[0].iov_len - len ? content_length : (int)iv[0].iov_len - len));
+                                    content_length -= (iv[1].iov_len = min(content_length, (int)iv[0].iov_len - len));
                                     if(resp) resp->append(&header[len], iv[1].iov_len);
                                     len += iv[1].iov_len;
                                 }
