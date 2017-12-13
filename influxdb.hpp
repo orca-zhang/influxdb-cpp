@@ -11,7 +11,7 @@ using namespace std;
 #define FMT_BUF_LEN 25 // double 24 bytes, int64_t 20 bytes
 #define FMT_APPEND(args...) \
     lines_.resize(lines_.length() + FMT_BUF_LEN);\
-    lines_.resize(lines_.length() - FMT_BUF_LEN + snprintf(&lines_[0] + lines_.length() - FMT_BUF_LEN, FMT_BUF_LEN, ##args));
+    lines_.resize(lines_.length() - FMT_BUF_LEN + snprintf(&lines_[lines_.length() - FMT_BUF_LEN], FMT_BUF_LEN, ##args));
 
 namespace influxdb_cpp {
     struct server_info {
@@ -231,16 +231,17 @@ namespace influxdb_cpp {
 
             iv[0].iov_len = len;
 
-#define _GET_NEXT_CHAR() (ch = (len >= (int)iv[0].iov_len && \
-    (iv[0].iov_len = recv(sock, iv[0].iov_base, iv[0].iov_len, len = 0)) == size_t(-1) ? \
-     0 : *((char*)iv[0].iov_base + len++)))
+#define _NO_MORE() (len >= (int)iv[0].iov_len && \
+    (iv[0].iov_len = recv(sock, &header[0], header.length(), len = 0)) == size_t(-1))
+#define _GET_NEXT_CHAR() (ch = _NO_MORE() ? 0 : header[len++])
 #define _LOOP_NEXT(statement) for(;;) { if(!(_GET_NEXT_CHAR())) { ret_code = -7; goto END; } statement }
 #define _UNTIL(c) _LOOP_NEXT( if(ch == c) break; )
 #define _GET_NUMBER(n) _LOOP_NEXT( if(ch >= '0' && ch <= '9') n = n * 10 + (ch - '0'); else break; )
-#define _GET_CHUNKED_LEN(n) _LOOP_NEXT( if(ch >= '0' && ch <= '9') n = n * 16 + (ch - '0'); \
+#define _GET_CHUNKED_LEN(n, c) _LOOP_NEXT( if(ch >= '0' && ch <= '9') n = n * 16 + (ch - '0'); \
             else if(ch >= 'A' && ch <= 'F') n = n * 16 + (ch - 'A') + 10; \
-            else if(ch >= 'a' && ch <= 'f') n = n * 16 + (ch - 'a') + 10; else {if(ch != '\r') { ret_code = -8; goto END; } break;} )
+            else if(ch >= 'a' && ch <= 'f') n = n * 16 + (ch - 'a') + 10; else {if(ch != c) { ret_code = -8; goto END; } break;} )
 #define _(c) if((_GET_NEXT_CHAR()) != c) break;
+#define __(c) if((_GET_NEXT_CHAR()) != c) { ret_code = -9; goto END; }
 
             _UNTIL(' ')_GET_NUMBER(ret_code)
             for(;;) {
@@ -255,37 +256,41 @@ namespace influxdb_cpp {
                         _(' ')_('c')_('h')_('u')_('n')_('k')_('e')_('d')
                         chunked = true;
                         break;
-                    case '\r':_('\n')
+                    case '\r':__('\n')
                         switch(chunked) {
-                            do {
+                            do {__('\r')__('\n')
                             case true:
-                                _GET_CHUNKED_LEN(content_length)_('\n')
+                                _GET_CHUNKED_LEN(content_length, '\r')__('\n')
                                 if(!content_length) {
-                                    _('\r')_('\n')
+                                    __('\r')__('\n')
                                     goto END;
                                 }
                             case false:
-                                while(content_length-- > 0 && _GET_NEXT_CHAR()) {
-                                    if(resp) *resp += ch;
+                                while(content_length > 0 && !_NO_MORE()) {
+                                    content_length -= (iv[1].iov_len = (content_length < (int)iv[0].iov_len - len ? content_length : (int)iv[0].iov_len - len));
+                                    if(resp) resp->append(&header[len], iv[1].iov_len);
+                                    len += iv[1].iov_len;
                                 }
-                            } while (chunked);
+                            } while(chunked);
                         }
                         goto END;
                 }
                 if(!ch) {
-                    ret_code = -9;
+                    ret_code = -10;
                     goto END;
                 }
             }
-            ret_code = -10;
+            ret_code = -11;
         END:
             return ret_code / 100 == 2 ? 0 : ret_code;
+#undef _NO_MORE
 #undef _GET_NEXT_CHAR
 #undef _LOOP_NEXT
 #undef _UNTIL
 #undef _GET_NUMBER
 #undef _GET_CHUNKED_LEN
 #undef _
+#undef __
         }
     }
 }
