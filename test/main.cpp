@@ -9,9 +9,9 @@ int main(int argc, char const *argv[])
         .meas("test")
         .tag("k", "v")
         .tag("x", "y")
-        .field_i("x", 10)
-        .field_f("y", 10.3, 2)
-        .field_b("b", 10)
+        .field("x", 10)
+        .field("y", 10.3, 2)
+        .field("b", !!10)
         .timestamp(1521841498234)
         .post_http(si);
 

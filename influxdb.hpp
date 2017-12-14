@@ -20,17 +20,16 @@ namespace influxdb_cpp {
         string db_;
         string usr_;
         string pwd_;
-        server_info(const string& host, int port, const string& db, const string& usr = "", const string& pwd = "")
+        server_info(const string& host, int port, const string& db = "", const string& usr = "", const string& pwd = "")
             : host_(host), port_(port), db_(db), usr_(usr), pwd_(pwd)
         {
         }
     };
     namespace detail {
-        class meas_caller;
-        class tag_caller;
-        class field_caller;
-        class ts_caller;
-        class nl_caller;
+        struct meas_caller;
+        struct tag_caller;
+        struct field_caller;
+        struct ts_caller;
         int http_request(const char*, const char*, const string&, const string&, const server_info&, string* = NULL);
         void url_encode(string&, const std::string&);
     }
@@ -95,11 +94,6 @@ namespace influxdb_cpp {
             FMT_APPEND(" %lld", ts);
             return (detail::ts_caller&)*this;
         }
-        detail::nl_caller& _nl() {
-            lines_ += '\n';
-            return (detail::nl_caller&)*this;
-        }
-
         int _post_http(const server_info& si) {
             return detail::http_request("POST", "write", "", lines_, si);
         }
@@ -117,7 +111,6 @@ namespace influxdb_cpp {
 
             return sendto(sock, &lines_[0], lines_.length(), 0, (struct sockaddr *)&addr, sizeof(addr)) < (int)lines_.length() ? -3 : 0;
         }
-
         void _escape(const string& src, const char* escape_seq) {
             size_t pos = 0, start = 0;
             while((pos = src.find_first_of(escape_seq, start)) != string::npos) {
@@ -133,39 +126,38 @@ namespace influxdb_cpp {
     };
     
     namespace detail {
-        class nl_caller : public builder
+        struct field_helper : public builder
         {
-        public:
-            detail::tag_caller& meas(const string& m)                            { return builder::_m(m); }
+            detail::field_caller& field(const string& k, const string& v)        { return builder::_f_s(' ', k, v); }
+            detail::field_caller& field(const string& k, bool v)                 { return builder::_f_b(' ', k, v); }
+            detail::field_caller& field(const string& k, short v)                { return builder::_f_i(' ', k, v); }
+            detail::field_caller& field(const string& k, unsigned short v)       { return builder::_f_i(' ', k, v); }
+            detail::field_caller& field(const string& k, int v)                  { return builder::_f_i(' ', k, v); }
+            detail::field_caller& field(const string& k, unsigned int v)         { return builder::_f_i(' ', k, v); }
+            detail::field_caller& field(const string& k, long v)                 { return builder::_f_i(' ', k, v); }
+            detail::field_caller& field(const string& k, unsigned long v)        { return builder::_f_i(' ', k, v); }
+            detail::field_caller& field(const string& k, long long v)            { return builder::_f_i(' ', k, v); }
+            detail::field_caller& field(const string& k, unsigned long long v)   { return builder::_f_i(' ', k, v); }
+            detail::field_caller& field(const string& k, double v, int prec = 2) { return builder::_f_f(' ', k, v, prec); }
+        private:
+            detail::tag_caller& meas(const string& m);
         };
-
-        class tag_caller : public builder
+        struct tag_caller : public field_helper
         {
-        public:
             detail::tag_caller& tag(const string& k, const string& v)            { return builder::_t(k, v); }
-            detail::field_caller& field_s(const string& k, const string& v)      { return builder::_f_s(' ', k, v); }
-            detail::field_caller& field_i(const string& k, unsigned long long v) { return builder::_f_i(' ', k, v); }
-            detail::field_caller& field_f(const string& k, double v, int prec)   { return builder::_f_f(' ', k, v, prec); }
-            detail::field_caller& field_b(const string& k, bool v)               { return builder::_f_b(' ', k, v); }
+        private:
+            detail::tag_caller& meas(const string& m);
         };
-
-        class field_caller : public builder
+        struct field_caller : public field_helper
         {
-        public:
-            detail::field_caller& field_s(const string& k, const string& v)      { return builder::_f_s(',', k, v); }
-            detail::field_caller& field_i(const string& k, unsigned long long v) { return builder::_f_i(',', k, v); }
-            detail::field_caller& field_f(const string& k, double v, int prec)   { return builder::_f_f(',', k, v, prec); }
-            detail::field_caller& field_b(const string& k, bool v)               { return builder::_f_b(',', k, v); }
+            detail::tag_caller& meas(const string& m)                            { lines_ += '\n'; return builder::_m(m); }
             detail::ts_caller& timestamp(unsigned long long ts)                  { return builder::_ts(ts); }
-            detail::nl_caller& newline()                                         { return builder::_nl(); }
             int post_http(const server_info& si)                                 { return builder::_post_http(si); }
             int send_udp(const string& host, int port)                           { return builder::_send_udp(host, port); }
         };
-
-        class ts_caller : public builder
+        struct ts_caller : public builder
         {
-        public:
-            detail::nl_caller& newline()                                         { return builder::_nl(); }
+            detail::tag_caller& meas(const string& m)                            { lines_ += '\n'; return builder::_m(m); }
             int post_http(const server_info& si)                                 { return builder::_post_http(si); }
             int send_udp(const string& host, int port)                           { return builder::_send_udp(host, port); }
         };
