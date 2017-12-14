@@ -3,6 +3,7 @@
 #include <cstdio>
 using namespace std;
 
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -48,7 +49,6 @@ namespace influxdb_cpp {
             lines_.reserve(0x100);
             return _m(m);
         }
-
     protected:
         detail::tag_caller& _m(const string& m) {
             _escape(m, ", ");
@@ -100,16 +100,21 @@ namespace influxdb_cpp {
         int _send_udp(const string& host, int port) {
             int sock;
             struct sockaddr_in addr;
-            
-            if((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-                return -1;
 
             addr.sin_family = AF_INET;
             addr.sin_port = htons(port);
             if((addr.sin_addr.s_addr = inet_addr(host.c_str())) == INADDR_NONE)
+                return -1;
+            
+            if((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
                 return -2;
 
-            return sendto(sock, &lines_[0], lines_.length(), 0, (struct sockaddr *)&addr, sizeof(addr)) < (int)lines_.length() ? -3 : 0;
+            if(sendto(sock, &lines_[0], lines_.length(), 0, (struct sockaddr *)&addr, sizeof(addr)) < (int)lines_.length()) {
+                close(sock);
+                return -3;
+            }
+            close(sock);
+            return 0;
         }
         void _escape(const string& src, const char* escape_seq) {
             size_t pos = 0, start = 0;
@@ -126,8 +131,9 @@ namespace influxdb_cpp {
     };
     
     namespace detail {
-        struct field_helper : public builder
+        struct tag_caller : public builder
         {
+            detail::tag_caller& tag(const string& k, const string& v)            { return builder::_t(k, v); }
             detail::field_caller& field(const string& k, const string& v)        { return builder::_f_s(' ', k, v); }
             detail::field_caller& field(const string& k, bool v)                 { return builder::_f_b(' ', k, v); }
             detail::field_caller& field(const string& k, short v)                { return builder::_f_i(' ', k, v); }
@@ -142,26 +148,27 @@ namespace influxdb_cpp {
         private:
             detail::tag_caller& meas(const string& m);
         };
-        struct tag_caller : public field_helper
-        {
-            detail::tag_caller& tag(const string& k, const string& v)            { return builder::_t(k, v); }
-        private:
-            detail::tag_caller& meas(const string& m);
-        };
-        struct field_caller : public field_helper
-        {
-            detail::tag_caller& meas(const string& m)                            { lines_ += '\n'; return builder::_m(m); }
-            detail::ts_caller& timestamp(unsigned long long ts)                  { return builder::_ts(ts); }
-            int post_http(const server_info& si)                                 { return builder::_post_http(si); }
-            int send_udp(const string& host, int port)                           { return builder::_send_udp(host, port); }
-        };
         struct ts_caller : public builder
         {
             detail::tag_caller& meas(const string& m)                            { lines_ += '\n'; return builder::_m(m); }
             int post_http(const server_info& si)                                 { return builder::_post_http(si); }
             int send_udp(const string& host, int port)                           { return builder::_send_udp(host, port); }
         };
-
+        struct field_caller : public ts_caller
+        {
+            detail::field_caller& field(const string& k, const string& v)        { return builder::_f_s(',', k, v); }
+            detail::field_caller& field(const string& k, bool v)                 { return builder::_f_b(',', k, v); }
+            detail::field_caller& field(const string& k, short v)                { return builder::_f_i(',', k, v); }
+            detail::field_caller& field(const string& k, unsigned short v)       { return builder::_f_i(',', k, v); }
+            detail::field_caller& field(const string& k, int v)                  { return builder::_f_i(',', k, v); }
+            detail::field_caller& field(const string& k, unsigned int v)         { return builder::_f_i(',', k, v); }
+            detail::field_caller& field(const string& k, long v)                 { return builder::_f_i(',', k, v); }
+            detail::field_caller& field(const string& k, unsigned long v)        { return builder::_f_i(',', k, v); }
+            detail::field_caller& field(const string& k, long long v)            { return builder::_f_i(',', k, v); }
+            detail::field_caller& field(const string& k, unsigned long long v)   { return builder::_f_i(',', k, v); }
+            detail::field_caller& field(const string& k, double v, int prec = 2) { return builder::_f_f(',', k, v, prec); }
+            detail::ts_caller& timestamp(unsigned long long ts)                  { return builder::_ts(ts); }
+        };
         unsigned char to_hex(unsigned char x) { return  x > 9 ? x + 55 : x + 48; }
         void url_encode(string& out, const std::string& src)
         {
@@ -179,7 +186,6 @@ namespace influxdb_cpp {
             }
             out.append(src.c_str() + start, src.length() - start);
         }
-
         int http_request(const char* method, const char* uri,
             const string& querystring, const string& body, const server_info& si, string* resp) {
             string header;
@@ -188,17 +194,19 @@ namespace influxdb_cpp {
             int sock, ret_code = 0, content_length = 0, len = 0;
             char ch;
             bool chunked = false;
-            
-            if((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-                return -1;
 
             addr.sin_family = AF_INET;
             addr.sin_port = htons(si.port_);
             if((addr.sin_addr.s_addr = inet_addr(si.host_.c_str())) == INADDR_NONE)
+                return -1;
+
+            if((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
                 return -2;
 
-            if(connect(sock, (struct sockaddr*)(&addr), sizeof(addr)) < 0)
+            if(connect(sock, (struct sockaddr*)(&addr), sizeof(addr)) < 0) {
+                close(sock);
                 return -3;
+            }
 
             header.resize(len = 0x100);
 
@@ -274,6 +282,7 @@ namespace influxdb_cpp {
             }
             ret_code = -11;
         END:
+            close(sock);
             return ret_code / 100 == 2 ? 0 : ret_code;
 #undef _NO_MORE
 #undef _GET_NEXT_CHAR
@@ -286,6 +295,5 @@ namespace influxdb_cpp {
         }
     }
 }
-
 #undef FMT_BUF_LEN
 #undef FMT_APPEND
