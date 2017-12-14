@@ -1,8 +1,12 @@
 # influxdb-cpp
 
-A header-only query & write C++ client for InfluxDB.
+A header-only C++ query & write client for InfluxDB.
 
 [![license](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](https://github.com/orca-zhang/influxdb-cpp/blob/master/LICENSE)
+
+- Support versions:
+  - InfluxDB v0.9 ~ 1.4
+  - Check yourself while using other versions.
 
 ### Why use influxdb-cpp?
 
@@ -27,7 +31,7 @@ A header-only query & write C++ client for InfluxDB.
 
 #### Write example
 
-- You should according to the [write syntax(v1.4)](https://docs.influxdata.com/influxdb/v1.4/write_protocols/line_protocol_reference/) while writing series(metrics).
+- You should according to the [write syntax](https://docs.influxdata.com/influxdb/v1.4/write_protocols/line_protocol_reference/) while writing series(metrics).
 
     ```
     measurement[,tag-key=tag-value...] field-key=field-value[,field2-key=field2-value...] [unix-nano-timestamp]
@@ -51,13 +55,13 @@ A header-only query & write C++ client for InfluxDB.
     ```
 
   - **NOTE**: 
-    - 3rd parameter `precision` of `field()` is optional for floating field value, and default precision is `2`. 
+    - 3rd parameter `precision` of `field()` is optional for floating point value, and default precision is `2`. 
     - `usr` and `pwd` is optional for authorization.
 
-- The series to be send is like:
+- The series to be send are like:
 
     ```
-    foo,k=v,x=y x=10i y=10.30 y=10.35 b=t 1512722735522840439
+    foo,k=v,x=y x=10i,y=10.30,y=10.35,b=t 1512722735522840439
     ```
 
 - You could change `post_http` to `send_udp` for udp request. Only `host` and `port` is required for udp.
@@ -81,7 +85,7 @@ A header-only query & write C++ client for InfluxDB.
         .send_udp(si);
     ```
 
-- The series to be send is like:
+- The series to be send are like:
 
     ```
     foo x=10i
@@ -104,9 +108,10 @@ A header-only query & write C++ client for InfluxDB.
 - Add more test cases.
 - Supports DSN initializatin for server_info.
 - Add query response parse tutorial.
+- Support Windows.
 
 ### Misc
 
 - Please feel free to use influxdb-cpp.
 - Looking forward to your suggestions.
-- If your project is using influxdb-cpp, you can show your project or company here by creating a issue or let we know.
+- If your project is using influxdb-cpp, you can show your project or company here by creating a issue or let me know.

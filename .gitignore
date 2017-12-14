@@ -6,6 +6,10 @@
 *.lo
 *.o
 *.obj
+CMakeFiles
+CMakeCache.txt
+*.cmake
+Makefile
 
 # Precompiled Headers
 *.gch
@@ -30,3 +34,7 @@
 *.exe
 *.out
 *.app
+*_ut
+
+# ctags files
+.tags*
