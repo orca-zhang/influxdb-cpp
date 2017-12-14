@@ -12,7 +12,7 @@ int main(int argc, char const *argv[])
         .field("x", 10)
         .field("y", 10.3, 2)
         .field("b", !!10)
-        .timestamp(1521841498234)
+        .timestamp(1512722735522840439)
         .post_http(si);
 
     string resp;

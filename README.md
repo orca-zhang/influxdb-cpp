@@ -46,7 +46,7 @@ A header-only query & write C++ client for InfluxDB.
         .field("y", 10.3, 2)
         .field("y", 10.3456)
         .field("b", !!10)
-        .timestamp(1521841498234)
+        .timestamp(1512722735522840439)
         .post_http(si);
     ```
 
@@ -57,7 +57,7 @@ A header-only query & write C++ client for InfluxDB.
 - The series to be send is like:
 
     ```
-    foo,k=v,x=y x=10i y=10.30 y=10.35 b=t 1521841498234
+    foo,k=v,x=y x=10i y=10.30 y=10.35 b=t 1512722735522840439
     ```
 
 - You could change `post_http` to `send_udp` for udp request. Only `host` and `port` is required for udp.
