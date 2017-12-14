@@ -1,21 +1,19 @@
 # influxdb-cpp
 
-### What is influxdb-cpp?
+A header-only query & write C++ client for InfluxDB.
 
 [![license](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](https://github.com/orca-zhang/influxdb-cpp/blob/master/LICENSE)
 
-- A header-only query & write client for C++.
-
 ### Why use influxdb-cpp?
 
-- **Exact-small**: 
+- **Exactly-small**: 
   - Less than 300 lines and only 10KB+.
 - **Easy-to-use**: 
   - It's designed to be used without extra studies.
 - **Easy-to-assemble**: 
   - Only a tiny header file needs to be included.
 - **No-dependencies**: 
-  - Unless STL and std c libraries.
+  - Unless STL and std C libraries.
 
 ### Examples
 
@@ -72,7 +70,7 @@
         .send_udp(si);
     ```
 
-- Bulk/batch is also support:
+- Bulk/batch write is also supported:
 
     ```cpp
     influxdb_cpp::builder()
