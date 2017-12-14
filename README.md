@@ -8,14 +8,18 @@
 
 ### Why use influxdb-cpp?
 
-- **Exact-small**: less than 300 lines and only 10KB+.
-- **Easy-to-use**: it's designed to be used without extra studies.
-- **Easy-to-assemble**: only a tiny header file needs to be included.
-- **No-dependencies**: unless STL and std c libraries.
+- **Exact-small**: 
+  - Less than 300 lines and only 10KB+.
+- **Easy-to-use**: 
+  - It's designed to be used without extra studies.
+- **Easy-to-assemble**: 
+  - Only a tiny header file needs to be included.
+- **No-dependencies**: 
+  - Unless STL and std c libraries.
 
 ### Examples
 
-#### before using
+#### Before using
 
 - The very simple thing you should do before using is only:
 
@@ -23,7 +27,7 @@
     #include "influxdb.hpp"
     ```
 
-#### write example
+#### Write example
 
 - You should according to the [write syntax(v1.4)](https://docs.influxdata.com/influxdb/v1.4/write_protocols/line_protocol_reference/) while writing series(metrics).
 
@@ -48,17 +52,17 @@
         .post_http(si);
     ```
 
+  - **NOTE**: 
+    - 3rd parameter `precision` of `field()` is optional for floating field value, and default precision is `2`. 
+    - `usr` and `pwd` is optional for authorization.
+
 - The series to be send is like:
 
     ```
     foo,k=v,x=y x=10i y=10.30 y=10.35 b=t 1521841498234
     ```
 
-- **NOTE**: 
-  - 3rd parameter of `field()`: `precision` is optional for floating field value, and default precision is `2`. 
-  - `usr` and `pwd` is optional for authorization.
-
-- You could change `post_http` to `send_udp` for udp request. only `host` and `port` is required for udp.
+- You could change `post_http` to `send_udp` for udp request. Only `host` and `port` is required for udp.
 
     ```cpp
     influxdb_cpp::server_info si("127.0.0.1", 8091);
@@ -68,7 +72,7 @@
         .send_udp(si);
     ```
 
-- Bulk/batch is also support. 
+- Bulk/batch is also support:
 
     ```cpp
     influxdb_cpp::builder()
@@ -86,7 +90,7 @@
     bar y=10.30
     ```
 
-#### query example
+#### Query example
 
 - And you can query series by according to the following example.
 
