@@ -98,7 +98,7 @@ namespace influxdb_cpp {
             return detail::http_request("POST", "write", "", lines_, si);
         }
         int _send_udp(const string& host, int port) {
-            int sock;
+            int sock, ret = 0;
             struct sockaddr_in addr;
 
             addr.sin_family = AF_INET;
@@ -109,12 +109,11 @@ namespace influxdb_cpp {
             if((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
                 return -2;
 
-            if(sendto(sock, &lines_[0], lines_.length(), 0, (struct sockaddr *)&addr, sizeof(addr)) < (int)lines_.length()) {
-                close(sock);
-                return -3;
-            }
+            if(sendto(sock, &lines_[0], lines_.length(), 0, (struct sockaddr *)&addr, sizeof(addr)) < (int)lines_.length())
+                ret = -3;
+
             close(sock);
-            return 0;
+            return ret;
         }
         void _escape(const string& src, const char* escape_seq) {
             size_t pos = 0, start = 0;
