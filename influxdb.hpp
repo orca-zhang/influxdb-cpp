@@ -69,11 +69,11 @@ namespace influxdb_cpp {
             lines_ += '\"';
             return (detail::field_caller&)*this;
         }    
-        detail::field_caller& _f_i(char delim, const string& k, unsigned long long v) {
+        detail::field_caller& _f_i(char delim, const string& k, long long v) {
             lines_ += delim;
             _escape(k, ",= ");
             lines_ += '=';
-            FMT_APPEND("%lldi", (unsigned long long)v);
+            FMT_APPEND("%lldi", v);
             return (detail::field_caller&)*this;
         }
         detail::field_caller& _f_f(char delim, const string& k, double v, int prec) {
@@ -90,7 +90,7 @@ namespace influxdb_cpp {
             lines_ += (v ? 't' : 'f');
             return (detail::field_caller&)*this;
         }
-        detail::ts_caller& _ts(unsigned long long ts) {
+        detail::ts_caller& _ts(long long ts) {
             FMT_APPEND(" %lld", ts);
             return (detail::ts_caller&)*this;
         }
@@ -136,13 +136,9 @@ namespace influxdb_cpp {
             detail::field_caller& field(const string& k, const string& v)        { return builder::_f_s(' ', k, v); }
             detail::field_caller& field(const string& k, bool v)                 { return builder::_f_b(' ', k, v); }
             detail::field_caller& field(const string& k, short v)                { return builder::_f_i(' ', k, v); }
-            detail::field_caller& field(const string& k, unsigned short v)       { return builder::_f_i(' ', k, v); }
             detail::field_caller& field(const string& k, int v)                  { return builder::_f_i(' ', k, v); }
-            detail::field_caller& field(const string& k, unsigned int v)         { return builder::_f_i(' ', k, v); }
             detail::field_caller& field(const string& k, long v)                 { return builder::_f_i(' ', k, v); }
-            detail::field_caller& field(const string& k, unsigned long v)        { return builder::_f_i(' ', k, v); }
             detail::field_caller& field(const string& k, long long v)            { return builder::_f_i(' ', k, v); }
-            detail::field_caller& field(const string& k, unsigned long long v)   { return builder::_f_i(' ', k, v); }
             detail::field_caller& field(const string& k, double v, int prec = 2) { return builder::_f_f(' ', k, v, prec); }
         private:
             detail::tag_caller& meas(const string& m);
@@ -158,13 +154,9 @@ namespace influxdb_cpp {
             detail::field_caller& field(const string& k, const string& v)        { return builder::_f_s(',', k, v); }
             detail::field_caller& field(const string& k, bool v)                 { return builder::_f_b(',', k, v); }
             detail::field_caller& field(const string& k, short v)                { return builder::_f_i(',', k, v); }
-            detail::field_caller& field(const string& k, unsigned short v)       { return builder::_f_i(',', k, v); }
             detail::field_caller& field(const string& k, int v)                  { return builder::_f_i(',', k, v); }
-            detail::field_caller& field(const string& k, unsigned int v)         { return builder::_f_i(',', k, v); }
             detail::field_caller& field(const string& k, long v)                 { return builder::_f_i(',', k, v); }
-            detail::field_caller& field(const string& k, unsigned long v)        { return builder::_f_i(',', k, v); }
             detail::field_caller& field(const string& k, long long v)            { return builder::_f_i(',', k, v); }
-            detail::field_caller& field(const string& k, unsigned long long v)   { return builder::_f_i(',', k, v); }
             detail::field_caller& field(const string& k, double v, int prec = 2) { return builder::_f_f(',', k, v, prec); }
             detail::ts_caller& timestamp(unsigned long long ts)                  { return builder::_ts(ts); }
         };

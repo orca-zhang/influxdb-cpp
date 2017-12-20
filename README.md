@@ -58,7 +58,7 @@ A header-only C++ query & write client for InfluxDB.
     - 3rd parameter `precision` of `field()` is optional for floating point value, and default precision is `2`. 
     - `usr` and `pwd` is optional for authorization.
 
-- The series to be send are like:
+- The series sent is:
 
     ```
     foo,k=v,x=y x=10i,y=10.30,y=10.35,b=t 1512722735522840439
@@ -85,7 +85,7 @@ A header-only C++ query & write client for InfluxDB.
         .send_udp(si);
     ```
 
-- The series to be send are like:
+- The series sent are:
 
     ```
     foo x=10i
