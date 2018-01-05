@@ -10,13 +10,13 @@ A header-only C++ query & write client for InfluxDB.
 
 ### Why use influxdb-cpp?
 
-- **Exactly-small**: 
+- **Exactly-small**:
   - Less than 300 lines and only 10KB+.
-- **Easy-to-use**: 
+- **Easy-to-use**:
   - It's designed to be used without extra studies.
-- **Easy-to-assemble**: 
+- **Easy-to-assemble**:
   - Only a tiny header file needs to be included.
-- **No-dependencies**: 
+- **No-dependencies**:
   - Unless STL and std C libraries.
 
 ### Examples
@@ -64,7 +64,7 @@ A header-only C++ query & write client for InfluxDB.
     foo,k=v,x=y x=10i,y=10.30,y=10.35,b=t 1512722735522840439
     ```
 
-- You could change `post_http` to `send_udp` for udp request. Only `host` and `port` is required for udp.
+- You could change `post_http` to `send_udp` for udp request. And only `host` and `port` is required for udp.
 
     ```cpp
     influxdb_cpp::server_info si("127.0.0.1", 8091);
@@ -74,13 +74,14 @@ A header-only C++ query & write client for InfluxDB.
         .send_udp(si);
     ```
 
-- Bulk/batch write is also supported:
+- Bulk/batch/multiple insert is also support:
 
     ```cpp
     influxdb_cpp::builder()
-        .meas("foo")
+        .meas("foo")  // series 1
         .field("x", 10)
-        .meas("bar")
+
+        .meas("bar")  // series 2
         .field("y", 10.3)
         .send_udp(si);
     ```
@@ -109,6 +110,7 @@ A header-only C++ query & write client for InfluxDB.
 - Supports DSN initializatin for server_info.
 - Add query response parse tutorial.
 - Support Windows.
+- Do not need to connect every time.
 
 ### Misc
 
