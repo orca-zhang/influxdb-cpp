@@ -3,7 +3,7 @@
 A header-only C++ query & write client for InfluxDB.
 
 [![license](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](https://github.com/orca-zhang/influxdb-cpp/blob/master/LICENSE)
-[![Build Status](https://semaphoreci.com/api/v1/orca-zhang-91/influxdb-cpp/branches/master/badge.svg)](https://semaphoreci.com/orca-zhang-91/influxdb-cpp)
+[![Build Status](https://semaphoreci.com/api/v1/orca-zhang-91/influxdb-cpp/branches/master/shields_badge.svg)](https://semaphoreci.com/orca-zhang-91/influxdb-cpp)
 
 - Support versions:
   - InfluxDB v0.9 ~ 1.4
