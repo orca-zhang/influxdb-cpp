@@ -3,6 +3,7 @@
 A header-only C++ query & write client for InfluxDB.
 
 [![license](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](https://github.com/orca-zhang/influxdb-cpp/blob/master/LICENSE)
+[![Build Status](https://semaphoreci.com/api/v1/orca-zhang-91/influxdb-cpp/branches/master/badge.svg)](https://semaphoreci.com/orca-zhang-91/influxdb-cpp)
 
 - Support versions:
   - InfluxDB v0.9 ~ 1.4
@@ -29,9 +30,9 @@ A header-only C++ query & write client for InfluxDB.
     #include "influxdb.hpp"
     ```
 
-#### Write example
+#### Writing example
 
-- You should according to the [write syntax](https://docs.influxdata.com/influxdb/v1.4/write_protocols/line_protocol_reference/) while writing series(metrics).
+- You should reffer to the [write syntax](https://docs.influxdata.com/influxdb/v1.4/write_protocols/line_protocol_reference/) while writing series(metrics).
 
     ```
     measurement[,tag-key=tag-value...] field-key=field-value[,field2-key=field2-value...] [unix-nano-timestamp]
@@ -54,7 +55,7 @@ A header-only C++ query & write client for InfluxDB.
         .post_http(si);
     ```
 
-  - **NOTE**: 
+  - **NOTICE**: 
     - 3rd parameter `precision` of `field()` is optional for floating point value, and default precision is `2`. 
     - `usr` and `pwd` is optional for authorization.
 
@@ -74,7 +75,7 @@ A header-only C++ query & write client for InfluxDB.
         .send_udp(si);
     ```
 
-- Bulk/batch/multiple insert is also support:
+- Bulk/batch/multiple insert also supports:
 
     ```cpp
     influxdb_cpp::builder()
