@@ -68,11 +68,10 @@ A header-only C++ query & write client for InfluxDB.
 - You could change `post_http` to `send_udp` for udp request. And only `host` and `port` is required for udp.
 
     ```cpp
-    influxdb_cpp::server_info si("127.0.0.1", 8091);
     influxdb_cpp::builder()
         .meas("foo")
         .field("x", 10)
-        .send_udp(si);
+        .send_udp("127.0.0.1", 8091);
     ```
 
 - Bulk/batch/multiple insert also supports:
@@ -84,7 +83,7 @@ A header-only C++ query & write client for InfluxDB.
 
         .meas("bar")  // series 2
         .field("y", 10.3)
-        .send_udp(si);
+        .send_udp("127.0.0.1", 8091);
     ```
 
 - The series sent are:
