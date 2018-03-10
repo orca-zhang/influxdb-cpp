@@ -31,7 +31,7 @@ namespace influxdb_cpp {
         struct tag_caller;
         struct field_caller;
         struct ts_caller;
-        int http_request(const char*, const char*, const string&, const string&, const server_info&, string* = NULL);
+        int http_request(const char*, const char*, const string&, const string&, const server_info&, string*);
         void url_encode(string&, const std::string&);
     }
 
@@ -94,8 +94,8 @@ namespace influxdb_cpp {
             FMT_APPEND(" %lld", ts);
             return (detail::ts_caller&)*this;
         }
-        int _post_http(const server_info& si) {
-            return detail::http_request("POST", "write", "", lines_, si);
+        int _post_http(const server_info& si, string* resp) {
+            return detail::http_request("POST", "write", "", lines_, si, resp);
         }
         int _send_udp(const string& host, int port) {
             int sock, ret = 0;
@@ -132,33 +132,33 @@ namespace influxdb_cpp {
     namespace detail {
         struct tag_caller : public builder
         {
-            detail::tag_caller& tag(const string& k, const string& v)            { return builder::_t(k, v); }
-            detail::field_caller& field(const string& k, const string& v)        { return builder::_f_s(' ', k, v); }
-            detail::field_caller& field(const string& k, bool v)                 { return builder::_f_b(' ', k, v); }
-            detail::field_caller& field(const string& k, short v)                { return builder::_f_i(' ', k, v); }
-            detail::field_caller& field(const string& k, int v)                  { return builder::_f_i(' ', k, v); }
-            detail::field_caller& field(const string& k, long v)                 { return builder::_f_i(' ', k, v); }
-            detail::field_caller& field(const string& k, long long v)            { return builder::_f_i(' ', k, v); }
-            detail::field_caller& field(const string& k, double v, int prec = 2) { return builder::_f_f(' ', k, v, prec); }
+            detail::tag_caller& tag(const string& k, const string& v)            { return _t(k, v); }
+            detail::field_caller& field(const string& k, const string& v)        { return _f_s(' ', k, v); }
+            detail::field_caller& field(const string& k, bool v)                 { return _f_b(' ', k, v); }
+            detail::field_caller& field(const string& k, short v)                { return _f_i(' ', k, v); }
+            detail::field_caller& field(const string& k, int v)                  { return _f_i(' ', k, v); }
+            detail::field_caller& field(const string& k, long v)                 { return _f_i(' ', k, v); }
+            detail::field_caller& field(const string& k, long long v)            { return _f_i(' ', k, v); }
+            detail::field_caller& field(const string& k, double v, int prec = 2) { return _f_f(' ', k, v, prec); }
         private:
             detail::tag_caller& meas(const string& m);
         };
         struct ts_caller : public builder
         {
-            detail::tag_caller& meas(const string& m)                            { lines_ += '\n'; return builder::_m(m); }
-            int post_http(const server_info& si)                                 { return builder::_post_http(si); }
-            int send_udp(const string& host, int port)                           { return builder::_send_udp(host, port); }
+            detail::tag_caller& meas(const string& m)                            { lines_ += '\n'; return _m(m); }
+            int post_http(const server_info& si, string* resp = NULL)            { return _post_http(si, resp); }
+            int send_udp(const string& host, int port)                           { return _send_udp(host, port); }
         };
         struct field_caller : public ts_caller
         {
-            detail::field_caller& field(const string& k, const string& v)        { return builder::_f_s(',', k, v); }
-            detail::field_caller& field(const string& k, bool v)                 { return builder::_f_b(',', k, v); }
-            detail::field_caller& field(const string& k, short v)                { return builder::_f_i(',', k, v); }
-            detail::field_caller& field(const string& k, int v)                  { return builder::_f_i(',', k, v); }
-            detail::field_caller& field(const string& k, long v)                 { return builder::_f_i(',', k, v); }
-            detail::field_caller& field(const string& k, long long v)            { return builder::_f_i(',', k, v); }
-            detail::field_caller& field(const string& k, double v, int prec = 2) { return builder::_f_f(',', k, v, prec); }
-            detail::ts_caller& timestamp(unsigned long long ts)                  { return builder::_ts(ts); }
+            detail::field_caller& field(const string& k, const string& v)        { return _f_s(',', k, v); }
+            detail::field_caller& field(const string& k, bool v)                 { return _f_b(',', k, v); }
+            detail::field_caller& field(const string& k, short v)                { return _f_i(',', k, v); }
+            detail::field_caller& field(const string& k, int v)                  { return _f_i(',', k, v); }
+            detail::field_caller& field(const string& k, long v)                 { return _f_i(',', k, v); }
+            detail::field_caller& field(const string& k, long long v)            { return _f_i(',', k, v); }
+            detail::field_caller& field(const string& k, double v, int prec = 2) { return _f_f(',', k, v, prec); }
+            detail::ts_caller& timestamp(unsigned long long ts)                  { return _ts(ts); }
         };
         unsigned char to_hex(unsigned char x) { return  x > 9 ? x + 55 : x + 48; }
         void url_encode(string& out, const std::string& src)
@@ -233,6 +233,8 @@ namespace influxdb_cpp {
             else if(ch >= 'a' && ch <= 'f') n = n * 16 + (ch - 'a') + 10; else {if(ch != c) { ret_code = -8; goto END; } break;} )
 #define _(c) if((_GET_NEXT_CHAR()) != c) break;
 #define __(c) if((_GET_NEXT_CHAR()) != c) { ret_code = -9; goto END; }
+
+            if(resp) resp->clear();
 
             _UNTIL(' ')_GET_NUMBER(ret_code)
             for(;;) {
