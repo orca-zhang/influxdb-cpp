@@ -5,6 +5,7 @@ using namespace std;
 int main(int argc, char const *argv[])
 {
     influxdb_cpp::server_info si("127.0.0.1", 8086, "test", "test", "test");
+    // post_http demo with resp[optional]
     string resp;
     int ret = influxdb_cpp::builder()
         .meas("test")
@@ -18,6 +19,7 @@ int main(int argc, char const *argv[])
 
     cout << ret << endl << resp << endl;
 
+    // send_udp demo
     ret = influxdb_cpp::builder()
         .meas("test")
         .tag("k", "v")
@@ -30,7 +32,13 @@ int main(int argc, char const *argv[])
 
     cout << ret << endl;
 
+    // query from table
     influxdb_cpp::query(resp, "select * from t", si);
+    cout << resp << endl;
+
+    // create_db
+    influxdb_cpp::server_info si_new("127.0.0.1", 8086);
+    influxdb_cpp::create_db(resp, "x", si_new);
     cout << resp << endl;
     return 0;
 }

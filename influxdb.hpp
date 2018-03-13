@@ -41,6 +41,12 @@ namespace influxdb_cpp {
         return detail::http_request("GET", "query", qs, "", si, &resp);
     }
 
+    int create_db(string& resp, const string& db_name, const server_info& si) {
+        string qs("&q=create+database+");
+        detail::url_encode(qs, db_name);
+        return detail::http_request("POST", "query", qs, "", si, &resp);
+    }
+
     class builder
     {
     public:
