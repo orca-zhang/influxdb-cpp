@@ -32,7 +32,7 @@ A header-only C++ query & write client for InfluxDB.
 
 #### Writing example
 
-- You should reffer to the [write syntax](https://docs.influxdata.com/influxdb/v1.4/write_protocols/line_protocol_reference/) while writing series(metrics).
+- You should refer to the [write syntax](https://docs.influxdata.com/influxdb/v1.4/write_protocols/line_protocol_reference/) while writing series(metrics).
 
     ```
     measurement[,tag-key=tag-value...] field-key=field-value[,field2-key=field2-value...] [unix-nano-timestamp]
