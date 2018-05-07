@@ -3,16 +3,33 @@
 #include <cstdio>
 using namespace std;
 
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+#ifdef _WIN32
+    #include <windows.h>
+	#pragma comment(lib, "ws2_32")
+	#define close closesocket
+
+	typedef struct iovec {
+		void* iov_base;
+		size_t iov_len;
+	} iovec;
+
+	inline __int64 writev(int sock, struct iovec* iov, int cnt) {
+		__int64 r = send(sock, (const char*)iov->iov_base, iov->iov_len, 0);
+		if (r < 0) return r;
+		return r + writev(sock, iov + 1, cnt - 1);
+	}
+#else
+    #include <unistd.h>
+    #include <sys/types.h>
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+    #include <arpa/inet.h>
+#endif
 
 #define FMT_BUF_LEN 25 // double 24 bytes, int64_t 20 bytes
-#define FMT_APPEND(args...) \
+#define FMT_APPEND(...) \
     lines_.resize(lines_.length() + FMT_BUF_LEN);\
-    lines_.resize(lines_.length() - FMT_BUF_LEN + snprintf(&lines_[lines_.length() - FMT_BUF_LEN], FMT_BUF_LEN, ##args));
+    lines_.resize(lines_.length() - FMT_BUF_LEN + snprintf(&lines_[lines_.length() - FMT_BUF_LEN], FMT_BUF_LEN, ##__VA_ARGS__));
 
 namespace influxdb_cpp {
     struct server_info {
