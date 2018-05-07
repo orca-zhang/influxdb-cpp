@@ -1,23 +1,18 @@
 #include <string>
 #include <cstring>
 #include <cstdio>
-using namespace std;
 
 #ifdef _WIN32
+    #define NOMINMAX
     #include <windows.h>
-	#pragma comment(lib, "ws2_32")
-	#define close closesocket
-
-	typedef struct iovec {
-		void* iov_base;
-		size_t iov_len;
-	} iovec;
-
-	inline __int64 writev(int sock, struct iovec* iov, int cnt) {
-		__int64 r = send(sock, (const char*)iov->iov_base, iov->iov_len, 0);
-		if (r < 0) return r;
-		return r + writev(sock, iov + 1, cnt - 1);
-	}
+    #pragma comment(lib, "ws2_32")
+    #define close closesocket
+    typedef struct iovec { void* iov_base; size_t iov_len; } iovec;
+    inline __int64 writev(int sock, struct iovec* iov, int cnt) {
+        __int64 r = send(sock, (const char*)iov->iov_base, iov->iov_len, 0);
+        return (r < 0 || cnt == 1) ? r : r + writev(sock, iov + 1, cnt - 1);
+    }
+    #include <algorithm>
 #else
     #include <unistd.h>
     #include <sys/types.h>
@@ -26,65 +21,76 @@ using namespace std;
     #include <arpa/inet.h>
 #endif
 
-#define FMT_BUF_LEN 25 // double 24 bytes, int64_t 20 bytes
+#define FMT_BUF_LEN 25 // double 24 bytes, int64_t 21 bytes
 #define FMT_APPEND(...) \
     lines_.resize(lines_.length() + FMT_BUF_LEN);\
     lines_.resize(lines_.length() - FMT_BUF_LEN + snprintf(&lines_[lines_.length() - FMT_BUF_LEN], FMT_BUF_LEN, ##__VA_ARGS__));
 
 namespace influxdb_cpp {
     struct server_info {
-        string host_;
+        std::string host_;
         int port_;
-        string db_;
-        string usr_;
-        string pwd_;
-        server_info(const string& host, int port, const string& db = "", const string& usr = "", const string& pwd = "")
-            : host_(host), port_(port), db_(db), usr_(usr), pwd_(pwd)
-        {
-        }
+        std::string db_;
+        std::string usr_;
+        std::string pwd_;
+        server_info(const std::string& host, int port, const std::string& db = "", const std::string& usr = "", const std::string& pwd = "")
+            : host_(host), port_(port), db_(db), usr_(usr), pwd_(pwd) {}
     };
     namespace detail {
         struct meas_caller;
         struct tag_caller;
         struct field_caller;
         struct ts_caller;
-        int http_request(const char*, const char*, const string&, const string&, const server_info&, string*);
-        void url_encode(string&, const std::string&);
+        int http_request(const char*, const char*, const std::string&, const std::string&, const server_info&, std::string*);
+        unsigned char to_hex(unsigned char x) { return  x > 9 ? x + 55 : x + 48; }
+        void url_encode(std::string& out, const std::string& src) {
+            size_t pos = 0, start = 0;
+            while((pos = src.find_first_not_of("abcdefghijklmnopqrstuvwxyqABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.~", start)) != std::string::npos) {
+                out.append(src.c_str() + start, pos - start);
+                if(src[pos] == ' ')
+                    out += "+";
+                else {
+                    out += '%';  
+                    out += to_hex((unsigned char)src[pos] >> 4);
+                    out += to_hex((unsigned char)src[pos] & 0xF);
+                }
+                start = ++pos;
+            }
+            out.append(src.c_str() + start, src.length() - start);
+        }
     }
 
-    int query(string& resp, const string& query, const server_info& si) {
-        string qs("&q=");
+    int query(std::string& resp, const std::string& query, const server_info& si) {
+        std::string qs("&q=");
         detail::url_encode(qs, query);
         return detail::http_request("GET", "query", qs, "", si, &resp);
     }
 
-    int create_db(string& resp, const string& db_name, const server_info& si) {
-        string qs("&q=create+database+");
+    int create_db(std::string& resp, const std::string& db_name, const server_info& si) {
+        std::string qs("&q=create+database+");
         detail::url_encode(qs, db_name);
         return detail::http_request("POST", "query", qs, "", si, &resp);
     }
 
-    class builder
-    {
-    public:
-        detail::tag_caller& meas(const string& m) {
+    struct builder {
+        detail::tag_caller& meas(const std::string& m) {
             lines_.clear();
             lines_.reserve(0x100);
             return _m(m);
         }
     protected:
-        detail::tag_caller& _m(const string& m) {
+        detail::tag_caller& _m(const std::string& m) {
             _escape(m, ", ");
             return (detail::tag_caller&)*this;
         }
-        detail::tag_caller& _t(const string& k, const string& v) {
+        detail::tag_caller& _t(const std::string& k, const std::string& v) {
             lines_ += ',';
             _escape(k, ",= ");
             lines_ += '=';
             _escape(v, ",= ");
             return (detail::tag_caller&)*this;
         }
-        detail::field_caller& _f_s(char delim, const string& k, const string& v) {
+        detail::field_caller& _f_s(char delim, const std::string& k, const std::string& v) {
             lines_ += delim;
             _escape(k, ",= ");
             lines_ += "=\"";
@@ -92,21 +98,21 @@ namespace influxdb_cpp {
             lines_ += '\"';
             return (detail::field_caller&)*this;
         }    
-        detail::field_caller& _f_i(char delim, const string& k, long long v) {
+        detail::field_caller& _f_i(char delim, const std::string& k, long long v) {
             lines_ += delim;
             _escape(k, ",= ");
             lines_ += '=';
             FMT_APPEND("%lldi", v);
             return (detail::field_caller&)*this;
         }
-        detail::field_caller& _f_f(char delim, const string& k, double v, int prec) {
+        detail::field_caller& _f_f(char delim, const std::string& k, double v, int prec) {
             lines_ += delim;
             _escape(k, ",= ");
             lines_ += '=';
             FMT_APPEND("%.*lf", prec, v);
             return (detail::field_caller&)*this;
         }
-        detail::field_caller& _f_b(char delim, const string& k, bool v) {
+        detail::field_caller& _f_b(char delim, const std::string& k, bool v) {
             lines_ += delim;
             _escape(k, ",= ");
             lines_ += '=';
@@ -117,10 +123,10 @@ namespace influxdb_cpp {
             FMT_APPEND(" %lld", ts);
             return (detail::ts_caller&)*this;
         }
-        int _post_http(const server_info& si, string* resp) {
+        int _post_http(const server_info& si, std::string* resp) {
             return detail::http_request("POST", "write", "", lines_, si, resp);
         }
-        int _send_udp(const string& host, int port) {
+        int _send_udp(const std::string& host, int port) {
             int sock, ret = 0;
             struct sockaddr_in addr;
 
@@ -138,9 +144,9 @@ namespace influxdb_cpp {
             close(sock);
             return ret;
         }
-        void _escape(const string& src, const char* escape_seq) {
+        void _escape(const std::string& src, const char* escape_seq) {
             size_t pos = 0, start = 0;
-            while((pos = src.find_first_of(escape_seq, start)) != string::npos) {
+            while((pos = src.find_first_of(escape_seq, start)) != std::string::npos) {
                 lines_.append(src.c_str() + start, pos - start);
                 lines_ += '\\';
                 lines_ += src[pos];
@@ -149,60 +155,40 @@ namespace influxdb_cpp {
             lines_.append(src.c_str() + start, src.length() - start);
         }
 
-        string lines_;
+        std::string lines_;
     };
     
     namespace detail {
-        struct tag_caller : public builder
-        {
-            detail::tag_caller& tag(const string& k, const string& v)            { return _t(k, v); }
-            detail::field_caller& field(const string& k, const string& v)        { return _f_s(' ', k, v); }
-            detail::field_caller& field(const string& k, bool v)                 { return _f_b(' ', k, v); }
-            detail::field_caller& field(const string& k, short v)                { return _f_i(' ', k, v); }
-            detail::field_caller& field(const string& k, int v)                  { return _f_i(' ', k, v); }
-            detail::field_caller& field(const string& k, long v)                 { return _f_i(' ', k, v); }
-            detail::field_caller& field(const string& k, long long v)            { return _f_i(' ', k, v); }
-            detail::field_caller& field(const string& k, double v, int prec = 2) { return _f_f(' ', k, v, prec); }
+        struct tag_caller : public builder {
+            detail::tag_caller& tag(const std::string& k, const std::string& v)       { return _t(k, v); }
+            detail::field_caller& field(const std::string& k, const std::string& v)   { return _f_s(' ', k, v); }
+            detail::field_caller& field(const std::string& k, bool v)                 { return _f_b(' ', k, v); }
+            detail::field_caller& field(const std::string& k, short v)                { return _f_i(' ', k, v); }
+            detail::field_caller& field(const std::string& k, int v)                  { return _f_i(' ', k, v); }
+            detail::field_caller& field(const std::string& k, long v)                 { return _f_i(' ', k, v); }
+            detail::field_caller& field(const std::string& k, long long v)            { return _f_i(' ', k, v); }
+            detail::field_caller& field(const std::string& k, double v, int prec = 2) { return _f_f(' ', k, v, prec); }
         private:
-            detail::tag_caller& meas(const string& m);
+            detail::tag_caller& meas(const std::string& m);
         };
-        struct ts_caller : public builder
-        {
-            detail::tag_caller& meas(const string& m)                            { lines_ += '\n'; return _m(m); }
-            int post_http(const server_info& si, string* resp = NULL)            { return _post_http(si, resp); }
-            int send_udp(const string& host, int port)                           { return _send_udp(host, port); }
+        struct ts_caller : public builder {
+            detail::tag_caller& meas(const std::string& m)                            { lines_ += '\n'; return _m(m); }
+            int post_http(const server_info& si, std::string* resp = NULL)            { return _post_http(si, resp); }
+            int send_udp(const std::string& host, int port)                           { return _send_udp(host, port); }
         };
-        struct field_caller : public ts_caller
-        {
-            detail::field_caller& field(const string& k, const string& v)        { return _f_s(',', k, v); }
-            detail::field_caller& field(const string& k, bool v)                 { return _f_b(',', k, v); }
-            detail::field_caller& field(const string& k, short v)                { return _f_i(',', k, v); }
-            detail::field_caller& field(const string& k, int v)                  { return _f_i(',', k, v); }
-            detail::field_caller& field(const string& k, long v)                 { return _f_i(',', k, v); }
-            detail::field_caller& field(const string& k, long long v)            { return _f_i(',', k, v); }
-            detail::field_caller& field(const string& k, double v, int prec = 2) { return _f_f(',', k, v, prec); }
+        struct field_caller : public ts_caller {
+            detail::field_caller& field(const std::string& k, const std::string& v)   { return _f_s(',', k, v); }
+            detail::field_caller& field(const std::string& k, bool v)                 { return _f_b(',', k, v); }
+            detail::field_caller& field(const std::string& k, short v)                { return _f_i(',', k, v); }
+            detail::field_caller& field(const std::string& k, int v)                  { return _f_i(',', k, v); }
+            detail::field_caller& field(const std::string& k, long v)                 { return _f_i(',', k, v); }
+            detail::field_caller& field(const std::string& k, long long v)            { return _f_i(',', k, v); }
+            detail::field_caller& field(const std::string& k, double v, int prec = 2) { return _f_f(',', k, v, prec); }
             detail::ts_caller& timestamp(unsigned long long ts)                  { return _ts(ts); }
         };
-        unsigned char to_hex(unsigned char x) { return  x > 9 ? x + 55 : x + 48; }
-        void url_encode(string& out, const std::string& src)
-        {
-            size_t pos = 0, start = 0;
-            while((pos = src.find_first_not_of("abcdefghijklmnopqrstuvwxyqABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.~", start)) != string::npos) {
-                out.append(src.c_str() + start, pos - start);
-                if(src[pos] == ' ')
-                    out += "+";
-                else {
-                    out += '%';  
-                    out += to_hex((unsigned char)src[pos] >> 4);
-                    out += to_hex((unsigned char)src[pos] & 0xF);
-                }
-                start = ++pos;
-            }
-            out.append(src.c_str() + start, src.length() - start);
-        }
         int http_request(const char* method, const char* uri,
-            const string& querystring, const string& body, const server_info& si, string* resp) {
-            string header;
+            const std::string& querystring, const std::string& body, const server_info& si, std::string* resp) {
+            std::string header;
             struct iovec iv[2];
             struct sockaddr_in addr;
             int sock, ret_code = 0, content_length = 0, len = 0;
@@ -283,7 +269,7 @@ namespace influxdb_cpp {
                                 }
                             case false:
                                 while(content_length > 0 && !_NO_MORE()) {
-                                    content_length -= (iv[1].iov_len = min(content_length, (int)iv[0].iov_len - len));
+                                    content_length -= (iv[1].iov_len = std::min(content_length, (int)iv[0].iov_len - len));
                                     if(resp) resp->append(&header[len], iv[1].iov_len);
                                     len += iv[1].iov_len;
                                 }
