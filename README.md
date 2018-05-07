@@ -104,12 +104,12 @@ A header-only C++ query & write client for InfluxDB.
     influxdb_cpp::query(resp, "select * from t", si);
     ```
 
+- You can use [xpjson](https://github.com/ez8-co/xpjson) to parse the result refer to [issue #3](https://github.com/orca-zhang/influxdb-cpp/issues/3).
+
 ### TODO
 
 - Add more test cases.
 - Supports DSN initializatin for server_info.
-- Add query response parse tutorial.
-- Support Windows.
 - Do not need to connect every time.
 
 ### Misc
