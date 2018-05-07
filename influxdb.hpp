@@ -5,6 +5,7 @@
 #ifdef _WIN32
     #define NOMINMAX
     #include <windows.h>
+    #include <algorithm>
     #pragma comment(lib, "ws2_32")
     #define close closesocket
     typedef struct iovec { void* iov_base; size_t iov_len; } iovec;
@@ -12,7 +13,6 @@
         __int64 r = send(sock, (const char*)iov->iov_base, iov->iov_len, 0);
         return (r < 0 || cnt == 1) ? r : r + writev(sock, iov + 1, cnt - 1);
     }
-    #include <algorithm>
 #else
     #include <unistd.h>
     #include <sys/types.h>
@@ -65,7 +65,6 @@ namespace influxdb_cpp {
         detail::url_encode(qs, query);
         return detail::http_request("GET", "query", qs, "", si, &resp);
     }
-
     int create_db(std::string& resp, const std::string& db_name, const server_info& si) {
         std::string qs("&q=create+database+");
         detail::url_encode(qs, db_name);
