@@ -7,7 +7,6 @@
     #include <windows.h>
     #include <algorithm>
     #pragma comment(lib, "ws2_32")
-    #define close closesocket
     typedef struct iovec { void* iov_base; size_t iov_len; } iovec;
     inline __int64 writev(int sock, struct iovec* iov, int cnt) {
         __int64 r = send(sock, (const char*)iov->iov_base, iov->iov_len, 0);
@@ -19,6 +18,7 @@
     #include <sys/socket.h>
     #include <netinet/in.h>
     #include <arpa/inet.h>
+    #define closesocket close
 #endif
 
 #define FMT_BUF_LEN 25 // double 24 bytes, int64_t 21 bytes
@@ -50,7 +50,7 @@ namespace influxdb_cpp {
                 if(src[pos] == ' ')
                     out += "+";
                 else {
-                    out += '%';  
+                    out += '%';
                     out += to_hex((unsigned char)src[pos] >> 4);
                     out += to_hex((unsigned char)src[pos] & 0xF);
                 }
@@ -140,7 +140,7 @@ namespace influxdb_cpp {
             if(sendto(sock, &lines_[0], lines_.length(), 0, (struct sockaddr *)&addr, sizeof(addr)) < (int)lines_.length())
                 ret = -3;
 
-            close(sock);
+            closesocket(sock);
             return ret;
         }
         void _escape(const std::string& src, const char* escape_seq) {
@@ -203,7 +203,7 @@ namespace influxdb_cpp {
                 return -2;
 
             if(connect(sock, (struct sockaddr*)(&addr), sizeof(addr)) < 0) {
-                close(sock);
+                closesocket(sock);
                 return -3;
             }
 
@@ -211,9 +211,9 @@ namespace influxdb_cpp {
 
             for(;;) {
                 iv[0].iov_len = snprintf(&header[0], len,
-                    "%s /%s?db=%s&u=%s&p=%s%s HTTP/1.1\r\nHost: %s\r\nContent-Length: %zd\r\n\r\n",
+                    "%s /%s?db=%s&u=%s&p=%s%s HTTP/1.1\r\nHost: %s\r\nContent-Length: %d\r\n\r\n",
                     method, uri, si.db_.c_str(), si.usr_.c_str(), si.pwd_.c_str(),
-                    querystring.c_str(), si.host_.c_str(), body.length());
+                    querystring.c_str(), si.host_.c_str(), (int)body.length());
                 if((int)iv[0].iov_len > len)
                     header.resize(len *= 2);
                 else
@@ -283,7 +283,7 @@ namespace influxdb_cpp {
             }
             ret_code = -11;
         END:
-            close(sock);
+            closesocket(sock);
             return ret_code / 100 == 2 ? 0 : ret_code;
 #undef _NO_MORE
 #undef _GET_NEXT_CHAR
