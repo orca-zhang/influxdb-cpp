@@ -55,7 +55,7 @@ A header-only C++ query & write client for InfluxDB.
         .post_http(si);
     ```
 
-  - **NOTICE**: 
+  - **Remarks**: 
     - 3rd parameter `precision` of `field()` is optional for floating point value, and default precision is `2`. 
     - `usr` and `pwd` is optional for authorization.
 
@@ -105,6 +105,11 @@ A header-only C++ query & write client for InfluxDB.
     ```
 
 - You can use [xpjson](https://github.com/ez8-co/xpjson) to parse the result refer to [issue #3](https://github.com/orca-zhang/influxdb-cpp/issues/3).
+
+#### Tips for Windows
+
+- You should init socket environment by yourself under Windows.
+  - FYR: [MSDN doc for `WSAStartup`](https://msdn.microsoft.com/en-us/library/windows/desktop/ms742213(v=vs.85).aspx)
 
 ### TODO
 
