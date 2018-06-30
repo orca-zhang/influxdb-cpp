@@ -41,34 +41,22 @@ namespace influxdb_cpp {
         struct tag_caller;
         struct field_caller;
         struct ts_caller;
-        int http_request(const char*, const char*, const std::string&, const std::string&, const server_info&, std::string*);
-        unsigned char to_hex(unsigned char x) { return  x > 9 ? x + 55 : x + 48; }
-        void url_encode(std::string& out, const std::string& src) {
-            size_t pos = 0, start = 0;
-            while((pos = src.find_first_not_of("abcdefghijklmnopqrstuvwxyqABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.~", start)) != std::string::npos) {
-                out.append(src.c_str() + start, pos - start);
-                if(src[pos] == ' ')
-                    out += "+";
-                else {
-                    out += '%';
-                    out += to_hex((unsigned char)src[pos] >> 4);
-                    out += to_hex((unsigned char)src[pos] & 0xF);
-                }
-                start = ++pos;
-            }
-            out.append(src.c_str() + start, src.length() - start);
-        }
+        struct inner {
+            static int http_request(const char*, const char*, const std::string&, const std::string&, const server_info&, std::string*);
+            static inline unsigned char to_hex(unsigned char x) { return  x > 9 ? x + 55 : x + 48; }
+            static void url_encode(std::string& out, const std::string& src);
+        };
     }
 
-    int query(std::string& resp, const std::string& query, const server_info& si) {
+    inline int query(std::string& resp, const std::string& query, const server_info& si) {
         std::string qs("&q=");
-        detail::url_encode(qs, query);
-        return detail::http_request("GET", "query", qs, "", si, &resp);
+        detail::inner::url_encode(qs, query);
+        return detail::inner::http_request("GET", "query", qs, "", si, &resp);
     }
-    int create_db(std::string& resp, const std::string& db_name, const server_info& si) {
+    inline int create_db(std::string& resp, const std::string& db_name, const server_info& si) {
         std::string qs("&q=create+database+");
-        detail::url_encode(qs, db_name);
-        return detail::http_request("POST", "query", qs, "", si, &resp);
+        detail::inner::url_encode(qs, db_name);
+        return detail::inner::http_request("POST", "query", qs, "", si, &resp);
     }
 
     struct builder {
@@ -123,7 +111,7 @@ namespace influxdb_cpp {
             return (detail::ts_caller&)*this;
         }
         int _post_http(const server_info& si, std::string* resp) {
-            return detail::http_request("POST", "write", "", lines_, si, resp);
+            return detail::inner::http_request("POST", "write", "", lines_, si, resp);
         }
         int _send_udp(const std::string& host, int port) {
             int sock, ret = 0;
@@ -131,11 +119,9 @@ namespace influxdb_cpp {
 
             addr.sin_family = AF_INET;
             addr.sin_port = htons(port);
-            if((addr.sin_addr.s_addr = inet_addr(host.c_str())) == INADDR_NONE)
-                return -1;
+            if((addr.sin_addr.s_addr = inet_addr(host.c_str())) == INADDR_NONE) return -1;
             
-            if((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-                return -2;
+            if((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) return -2;
 
             if(sendto(sock, &lines_[0], lines_.length(), 0, (struct sockaddr *)&addr, sizeof(addr)) < (int)lines_.length())
                 ret = -3;
@@ -183,9 +169,24 @@ namespace influxdb_cpp {
             detail::field_caller& field(const std::string& k, long v)                 { return _f_i(',', k, v); }
             detail::field_caller& field(const std::string& k, long long v)            { return _f_i(',', k, v); }
             detail::field_caller& field(const std::string& k, double v, int prec = 2) { return _f_f(',', k, v, prec); }
-            detail::ts_caller& timestamp(unsigned long long ts)                  { return _ts(ts); }
+            detail::ts_caller& timestamp(unsigned long long ts)                       { return _ts(ts); }
         };
-        int http_request(const char* method, const char* uri,
+        void inner::url_encode(std::string& out, const std::string& src) {
+            size_t pos = 0, start = 0;
+            while((pos = src.find_first_not_of("abcdefghijklmnopqrstuvwxyqABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.~", start)) != std::string::npos) {
+                out.append(src.c_str() + start, pos - start);
+                if(src[pos] == ' ')
+                    out += "+";
+                else {
+                    out += '%';
+                    out += to_hex((unsigned char)src[pos] >> 4);
+                    out += to_hex((unsigned char)src[pos] & 0xF);
+                }
+                start = ++pos;
+            }
+            out.append(src.c_str() + start, src.length() - start);
+        }
+        int inner::http_request(const char* method, const char* uri,
             const std::string& querystring, const std::string& body, const server_info& si, std::string* resp) {
             std::string header;
             struct iovec iv[2];
@@ -196,11 +197,9 @@ namespace influxdb_cpp {
 
             addr.sin_family = AF_INET;
             addr.sin_port = htons(si.port_);
-            if((addr.sin_addr.s_addr = inet_addr(si.host_.c_str())) == INADDR_NONE)
-                return -1;
+            if((addr.sin_addr.s_addr = inet_addr(si.host_.c_str())) == INADDR_NONE) return -1;
 
-            if((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-                return -2;
+            if((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) return -2;
 
             if(connect(sock, (struct sockaddr*)(&addr), sizeof(addr)) < 0) {
                 closesocket(sock);
