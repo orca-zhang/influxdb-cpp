@@ -1,4 +1,12 @@
-#include <string>
+/*
+  influxdb-cpp -- 💜 C++ client for InfluxDB.
+
+  Copyright (c) 2010-2018 <http://ez8.co> <orca.zhang@yahoo.com>
+  This library is released under the MIT License.
+
+  Please see LICENSE file or visit https://github.com/orca-zhang/influxdb-cpp for details.
+ */
+#include <sstream>
 #include <cstring>
 #include <cstdio>
 
@@ -20,11 +28,6 @@
     #include <arpa/inet.h>
     #define closesocket close
 #endif
-
-#define FMT_BUF_LEN 25 // double 24 bytes, int64_t 21 bytes
-#define FMT_APPEND(...) \
-    lines_.resize(lines_.length() + FMT_BUF_LEN);\
-    lines_.resize(lines_.length() - FMT_BUF_LEN + snprintf(&lines_[lines_.length() - FMT_BUF_LEN], FMT_BUF_LEN, ##__VA_ARGS__));
 
 namespace influxdb_cpp {
     struct server_info {
@@ -61,8 +64,8 @@ namespace influxdb_cpp {
 
     struct builder {
         detail::tag_caller& meas(const std::string& m) {
+            lines_.imbue(std::locale("C"));
             lines_.clear();
-            lines_.reserve(0x100);
             return _m(m);
         }
     protected:
@@ -71,47 +74,46 @@ namespace influxdb_cpp {
             return (detail::tag_caller&)*this;
         }
         detail::tag_caller& _t(const std::string& k, const std::string& v) {
-            lines_ += ',';
+            lines_ << ',';
             _escape(k, ",= ");
-            lines_ += '=';
+            lines_ << '=';
             _escape(v, ",= ");
             return (detail::tag_caller&)*this;
         }
         detail::field_caller& _f_s(char delim, const std::string& k, const std::string& v) {
-            lines_ += delim;
+            lines_ << delim;
             _escape(k, ",= ");
-            lines_ += "=\"";
+            lines_ << "=\"";
             _escape(v, "\"");
-            lines_ += '\"';
+            lines_ << '\"';
             return (detail::field_caller&)*this;
         }    
         detail::field_caller& _f_i(char delim, const std::string& k, long long v) {
-            lines_ += delim;
+            lines_ << delim;
             _escape(k, ",= ");
-            lines_ += '=';
-            FMT_APPEND("%lldi", v);
+            lines_ << '=';
+            lines_ << v << 'i';
             return (detail::field_caller&)*this;
         }
         detail::field_caller& _f_f(char delim, const std::string& k, double v, int prec) {
-            lines_ += delim;
+            lines_ << delim;
             _escape(k, ",= ");
-            lines_ += '=';
-            FMT_APPEND("%.*lf", prec, v);
+            lines_.precision(prec);
+            lines_ << '=' << v;
             return (detail::field_caller&)*this;
         }
         detail::field_caller& _f_b(char delim, const std::string& k, bool v) {
-            lines_ += delim;
+            lines_ << delim;
             _escape(k, ",= ");
-            lines_ += '=';
-            lines_ += (v ? 't' : 'f');
+            lines_ << '=' << (v ? 't' : 'f');
             return (detail::field_caller&)*this;
         }
         detail::ts_caller& _ts(long long ts) {
-            FMT_APPEND(" %lld", ts);
+            lines_ << ' ' << ts;
             return (detail::ts_caller&)*this;
         }
         int _post_http(const server_info& si, std::string* resp) {
-            return detail::inner::http_request("POST", "write", "", lines_, si, resp);
+            return detail::inner::http_request("POST", "write", "", lines_.str(), si, resp);
         }
         int _send_udp(const std::string& host, int port) {
             int sock, ret = 0;
@@ -123,7 +125,7 @@ namespace influxdb_cpp {
             
             if((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) return -2;
 
-            if(sendto(sock, &lines_[0], lines_.length(), 0, (struct sockaddr *)&addr, sizeof(addr)) < (int)lines_.length())
+            if(sendto(sock, &lines_.str()[0], lines_.str().length(), 0, (struct sockaddr *)&addr, sizeof(addr)) < (int)lines_.str().length())
                 ret = -3;
 
             closesocket(sock);
@@ -132,15 +134,14 @@ namespace influxdb_cpp {
         void _escape(const std::string& src, const char* escape_seq) {
             size_t pos = 0, start = 0;
             while((pos = src.find_first_of(escape_seq, start)) != std::string::npos) {
-                lines_.append(src.c_str() + start, pos - start);
-                lines_ += '\\';
-                lines_ += src[pos];
+                lines_.write(src.c_str() + start, pos - start);
+                lines_ << '\\' << src[pos];
                 start = ++pos;
             }
-            lines_.append(src.c_str() + start, src.length() - start);
+            lines_.write(src.c_str() + start, src.length() - start);
         }
 
-        std::string lines_;
+        std::stringstream lines_;
     };
     
     namespace detail {
@@ -157,7 +158,7 @@ namespace influxdb_cpp {
             detail::tag_caller& meas(const std::string& m);
         };
         struct ts_caller : public builder {
-            detail::tag_caller& meas(const std::string& m)                            { lines_ += '\n'; return _m(m); }
+            detail::tag_caller& meas(const std::string& m)                            { lines_ << '\n'; return _m(m); }
             int post_http(const server_info& si, std::string* resp = NULL)            { return _post_http(si, resp); }
             int send_udp(const std::string& host, int port)                           { return _send_udp(host, port); }
         };
@@ -295,5 +296,3 @@ namespace influxdb_cpp {
         }
     }
 }
-#undef FMT_BUF_LEN
-#undef FMT_APPEND
