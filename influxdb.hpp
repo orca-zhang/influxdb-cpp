@@ -87,7 +87,7 @@ namespace influxdb_cpp {
             _escape(v, "\"");
             lines_ << '\"';
             return (detail::field_caller&)*this;
-        }    
+        }
         detail::field_caller& _f_i(char delim, const std::string& k, long long v) {
             lines_ << delim;
             _escape(k, ",= ");
@@ -122,9 +122,10 @@ namespace influxdb_cpp {
             addr.sin_family = AF_INET;
             addr.sin_port = htons(port);
             if((addr.sin_addr.s_addr = inet_addr(host.c_str())) == INADDR_NONE) return -1;
-            
+
             if((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) return -2;
 
+            lines_ << '\n';
             if(sendto(sock, &lines_.str()[0], lines_.str().length(), 0, (struct sockaddr *)&addr, sizeof(addr)) < (int)lines_.str().length())
                 ret = -3;
 
@@ -143,7 +144,7 @@ namespace influxdb_cpp {
 
         std::stringstream lines_;
     };
-    
+
     namespace detail {
         struct tag_caller : public builder {
             detail::tag_caller& tag(const std::string& k, const std::string& v)       { return _t(k, v); }
