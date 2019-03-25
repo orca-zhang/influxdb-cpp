@@ -215,7 +215,7 @@ namespace influxdb_cpp {
                     "%s /%s?db=%s&u=%s&p=%s%s HTTP/1.1\r\nHost: %s\r\nContent-Length: %d\r\n\r\n",
                     method, uri, si.db_.c_str(), si.usr_.c_str(), si.pwd_.c_str(),
                     querystring.c_str(), si.host_.c_str(), (int)body.length());
-                if((int)iv[0].iov_len > len)
+                if((int)iv[0].iov_len >= len)
                     header.resize(len *= 2);
                 else
                     break;
