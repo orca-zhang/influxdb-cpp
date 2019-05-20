@@ -196,7 +196,7 @@ namespace influxdb_cpp {
             struct sockaddr_in addr;
             int sock, ret_code = 0, content_length = 0, len = 0;
             char ch;
-            bool chunked = false;
+            unsigned char chunked = 0;
 
             addr.sin_family = AF_INET;
             addr.sin_port = htons(si.port_);
@@ -257,18 +257,18 @@ namespace influxdb_cpp {
                     case 'T':_('r')_('a')_('n')_('s')_('f')_('e')_('r')_('-')
                         _('E')_('n')_('c')_('o')_('d')_('i')_('n')_('g')_(':')
                         _(' ')_('c')_('h')_('u')_('n')_('k')_('e')_('d')
-                        chunked = true;
+                        chunked = 1;
                         break;
                     case '\r':__('\n')
                         switch(chunked) {
                             do {__('\r')__('\n')
-                            case true:
+                            case 1:
                                 _GET_CHUNKED_LEN(content_length, '\r')__('\n')
                                 if(!content_length) {
                                     __('\r')__('\n')
                                     goto END;
                                 }
-                            case false:
+                            case 0:
                                 while(content_length > 0 && !_NO_MORE()) {
                                     content_length -= (iv[1].iov_len = std::min(content_length, (int)iv[0].iov_len - len));
                                     if(resp) resp->append(&header[len], iv[1].iov_len);
