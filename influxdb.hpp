@@ -174,7 +174,7 @@ namespace influxdb_cpp {
             detail::field_caller& field(const std::string& k, double v, int prec = 2) { return _f_f(',', k, v, prec); }
             detail::ts_caller& timestamp(unsigned long long ts)                       { return _ts(ts); }
         };
-        void inner::url_encode(std::string& out, const std::string& src) {
+        inline void inner::url_encode(std::string& out, const std::string& src) {
             size_t pos = 0, start = 0;
             while((pos = src.find_first_not_of("abcdefghijklmnopqrstuvwxyqABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.~", start)) != std::string::npos) {
                 out.append(src.c_str() + start, pos - start);
@@ -189,7 +189,7 @@ namespace influxdb_cpp {
             }
             out.append(src.c_str() + start, src.length() - start);
         }
-        int inner::http_request(const char* method, const char* uri,
+        inline int inner::http_request(const char* method, const char* uri,
             const std::string& querystring, const std::string& body, const server_info& si, std::string* resp) {
             std::string header;
             struct iovec iv[2];
