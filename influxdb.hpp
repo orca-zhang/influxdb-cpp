@@ -38,8 +38,8 @@ namespace influxdb_cpp {
         std::string precision_;
         std::string usr_;
         std::string pwd_;
-        server_info(const std::string& host, int port, const std::string& db = "", const std::string& precision="ms", const std::string& usr = "", const std::string& pwd = "")
-            : host_(host), port_(port), db_(db), precision_(precision), usr_(usr), pwd_(pwd) {}
+        server_info(const std::string& host, int port, const std::string& db = "", const std::string& usr = "", const std::string& pwd = "", const std::string& precision="ms")
+            : host_(host), port_(port), db_(db), usr_(usr), pwd_(pwd), precision_(precision) {}
     };
     namespace detail {
         struct meas_caller;
