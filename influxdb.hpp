@@ -35,10 +35,11 @@ namespace influxdb_cpp {
         std::string host_;
         int port_;
         std::string db_;
+        std::string precision_;
         std::string usr_;
         std::string pwd_;
-        server_info(const std::string& host, int port, const std::string& db = "", const std::string& usr = "", const std::string& pwd = "")
-            : host_(host), port_(port), db_(db), usr_(usr), pwd_(pwd) {}
+        server_info(const std::string& host, int port, const std::string& db = "", const std::string& precision="ms", const std::string& usr = "", const std::string& pwd = "")
+            : host_(host), port_(port), db_(db), precision_(precision), usr_(usr), pwd_(pwd) {}
     };
     namespace detail {
         struct meas_caller;
@@ -213,8 +214,8 @@ namespace influxdb_cpp {
 
             for(;;) {
                 iv[0].iov_len = snprintf(&header[0], len,
-                    "%s /%s?db=%s&u=%s&p=%s%s HTTP/1.1\r\nHost: %s\r\nContent-Length: %d\r\n\r\n",
-                    method, uri, si.db_.c_str(), si.usr_.c_str(), si.pwd_.c_str(),
+                    "%s /%s?db=%s&u=%s&p=%s&precision=%s%s HTTP/1.1\r\nHost: %s\r\nContent-Length: %d\r\n\r\n",
+                    method, uri, si.db_.c_str(), si.usr_.c_str(), si.pwd_.c_str(), si.precision_.c_str(),
                     querystring.c_str(), si.host_.c_str(), (int)body.length());
                 if((int)iv[0].iov_len >= len)
                     header.resize(len *= 2);
