@@ -35,9 +35,9 @@ namespace influxdb_cpp {
         std::string host_;
         int port_;
         std::string db_;
-        std::string precision_;
         std::string usr_;
         std::string pwd_;
+        std::string precision_;
         server_info(const std::string& host, int port, const std::string& db = "", const std::string& usr = "", const std::string& pwd = "", const std::string& precision="ms")
             : host_(host), port_(port), db_(db), usr_(usr), pwd_(pwd), precision_(precision) {}
     };
