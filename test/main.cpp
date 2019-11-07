@@ -35,16 +35,16 @@ int main(int argc, char const *argv[])
     cout << ret << endl;
 
     // query from table
-    influxdb_cpp::server_info si_new("127.0.0.1", 8086, "", "test", "test");
     influxdb_cpp::query(resp, "show databases", si);
     cout << resp << endl;
 
     // query from table, but use hostname instead of IP
-    influxdb_cpp::server_info si_new("localhost", 8086, "", "test", "test");
-    influxdb_cpp::query(resp, "show databases", si);
+    influxdb_cpp::server_info si_hostname("localhost", 8086, "testx", "test", "test");
+    influxdb_cpp::query(resp, "show databases", si_hostname);
     cout << resp << endl;
 
     // create_db
+    influxdb_cpp::server_info si_new("127.0.0.1", 8086, "", "test", "test");
     influxdb_cpp::create_db(resp, "x", si_new);
     cout << resp << endl;
     return 0;
