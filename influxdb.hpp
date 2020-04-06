@@ -214,7 +214,7 @@ namespace influxdb_cpp {
 
             for(;;) {
                 iv[0].iov_len = snprintf(&header[0], len,
-                    "%s /%s?db=%s&u=%s&p=%s&precision=%s%s HTTP/1.1\r\nHost: %s\r\nContent-Length: %d\r\n\r\n",
+                    "%s /%s?db=%s&u=%s&p=%s&epoch=%s%s HTTP/1.1\r\nHost: %s\r\nContent-Length: %d\r\n\r\n",
                     method, uri, si.db_.c_str(), si.usr_.c_str(), si.pwd_.c_str(), si.precision_.c_str(),
                     querystring.c_str(), si.host_.c_str(), (int)body.length());
                 if((int)iv[0].iov_len >= len)
