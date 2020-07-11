@@ -101,6 +101,7 @@ namespace influxdb_cpp {
             lines_ << delim;
             _escape(k, ",= ");
             lines_.precision(prec);
+            lines_.setf(std::ios::fixed);
             lines_ << '=' << v;
             return (detail::field_caller&)*this;
         }
