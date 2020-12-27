@@ -6,6 +6,10 @@
 
   Please see LICENSE file or visit https://github.com/orca-zhang/influxdb-cpp for details.
  */
+
+#ifndef INFLUXDB_CPP_HPP
+#define INFLUXDB_CPP_HPP
+
 #include <sstream>
 #include <cstring>
 #include <cstdio>
@@ -300,3 +304,5 @@ namespace influxdb_cpp {
         }
     }
 }
+
+#endif // INFLUXDB_CPP_HPP
