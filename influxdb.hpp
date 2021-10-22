@@ -51,21 +51,21 @@ namespace influxdb_cpp {
         struct field_caller;
         struct ts_caller;
         struct inner {
-            static int http_request(const char*, const char*, const std::string&, const std::string&, const server_info&, std::string*);
+            static int http_request(const char*, const char*, const std::string&, const std::string&, const server_info&, std::string*, const unsigned& timeout_sec = 0);
             static inline unsigned char to_hex(unsigned char x) { return  x > 9 ? x + 55 : x + 48; }
             static void url_encode(std::string& out, const std::string& src);
         };
     }
 
-    inline int query(std::string& resp, const std::string& query, const server_info& si) {
+    inline int query(std::string& resp, const std::string& query, const server_info& si, const unsigned& timeout_sec = 0) {
         std::string qs("&q=");
         detail::inner::url_encode(qs, query);
-        return detail::inner::http_request("GET", "query", qs, "", si, &resp);
+        return detail::inner::http_request("GET", "query", qs, "", si, &resp, timeout_sec);
     }
-    inline int create_db(std::string& resp, const std::string& db_name, const server_info& si) {
+    inline int create_db(std::string& resp, const std::string& db_name, const server_info& si, const unsigned& timeout_sec = 0) {
         std::string qs("&q=create+database+");
         detail::inner::url_encode(qs, db_name);
-        return detail::inner::http_request("POST", "query", qs, "", si, &resp);
+        return detail::inner::http_request("POST", "query", qs, "", si, &resp, timeout_sec);
     }
 
     struct builder {
@@ -119,8 +119,8 @@ namespace influxdb_cpp {
             lines_ << ' ' << ts;
             return (detail::ts_caller&)*this;
         }
-        int _post_http(const server_info& si, std::string* resp) {
-            return detail::inner::http_request("POST", "write", "", lines_.str(), si, resp);
+        int _post_http(const server_info& si, std::string* resp, const unsigned& timeout_sec = 0) {
+            return detail::inner::http_request("POST", "write", "", lines_.str(), si, resp, timeout_sec);
         }
         int _send_udp(const std::string& host, int port) {
             int sock, ret = 0;
@@ -167,7 +167,8 @@ namespace influxdb_cpp {
         };
         struct ts_caller : public builder {
             detail::tag_caller& meas(const std::string& m)                            { lines_ << '\n'; return _m(m); }
-            int post_http(const server_info& si, std::string* resp = NULL)            { return _post_http(si, resp); }
+            int post_http(const server_info& si, std::string* resp = NULL,
+                                          const unsigned& timeout_sec = 0)            { return _post_http(si, resp, timeout_sec); }
             int send_udp(const std::string& host, int port)                           { return _send_udp(host, port); }
         };
         struct field_caller : public ts_caller {
@@ -196,7 +197,7 @@ namespace influxdb_cpp {
             out.append(src.c_str() + start, src.length() - start);
         }
         inline int inner::http_request(const char* method, const char* uri,
-            const std::string& querystring, const std::string& body, const server_info& si, std::string* resp, const unsigned& timeout_sec = 0) {
+            const std::string& querystring, const std::string& body, const server_info& si, std::string* resp, const unsigned& timeout_sec) {
             std::string header;
             struct iovec iv[2];
             struct sockaddr_in addr;
