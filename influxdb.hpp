@@ -196,7 +196,7 @@ namespace influxdb_cpp {
             out.append(src.c_str() + start, src.length() - start);
         }
         inline int inner::http_request(const char* method, const char* uri,
-            const std::string& querystring, const std::string& body, const server_info& si, std::string* resp) {
+            const std::string& querystring, const std::string& body, const server_info& si, std::string* resp, const unsigned& timeout_sec = 0) {
             std::string header;
             struct iovec iv[2];
             struct sockaddr_in addr;
@@ -209,6 +209,9 @@ namespace influxdb_cpp {
             if((addr.sin_addr.s_addr = inet_addr(si.host_.c_str())) == INADDR_NONE) return -1;
 
             if((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) return -2;
+
+            struct timeval timeout{timeout_sec, 0};
+            if(setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(timeout)) < 0) return -2;
 
             if(connect(sock, (struct sockaddr*)(&addr), sizeof(addr)) < 0) {
                 closesocket(sock);
