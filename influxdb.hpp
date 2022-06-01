@@ -77,14 +77,14 @@ namespace influxdb_cpp {
     protected:
         detail::tag_caller& _m(const std::string& m) {
             _escape(m, ", ");
-            return (detail::tag_caller&)*this;
+            return reinterpret_cast<detail::tag_caller&>(*this);
         }
         detail::tag_caller& _t(const std::string& k, const std::string& v) {
             lines_ << ',';
             _escape(k, ",= ");
             lines_ << '=';
             _escape(v, ",= ");
-            return (detail::tag_caller&)*this;
+            return reinterpret_cast<detail::tag_caller&>(*this);
         }
         detail::field_caller& _f_s(char delim, const std::string& k, const std::string& v) {
             lines_ << delim;
@@ -92,14 +92,14 @@ namespace influxdb_cpp {
             lines_ << "=\"";
             _escape(v, "\"");
             lines_ << '\"';
-            return (detail::field_caller&)*this;
+            return reinterpret_cast<detail::field_caller&>(*this);
         }
         detail::field_caller& _f_i(char delim, const std::string& k, long long v) {
             lines_ << delim;
             _escape(k, ",= ");
             lines_ << '=';
             lines_ << v << 'i';
-            return (detail::field_caller&)*this;
+            return reinterpret_cast<detail::field_caller&>(*this);
         }
         detail::field_caller& _f_f(char delim, const std::string& k, double v, int prec) {
             lines_ << delim;
@@ -107,17 +107,17 @@ namespace influxdb_cpp {
             lines_.precision(prec);
             lines_.setf(std::ios::fixed);
             lines_ << '=' << v;
-            return (detail::field_caller&)*this;
+            return reinterpret_cast<detail::field_caller&>(*this);
         }
         detail::field_caller& _f_b(char delim, const std::string& k, bool v) {
             lines_ << delim;
             _escape(k, ",= ");
             lines_ << '=' << (v ? 't' : 'f');
-            return (detail::field_caller&)*this;
+            return reinterpret_cast<detail::field_caller&>(*this);
         }
         detail::ts_caller& _ts(long long ts) {
             lines_ << ' ' << ts;
-            return (detail::ts_caller&)*this;
+            return reinterpret_cast<detail::ts_caller&>(*this);
         }
         int _post_http(const server_info& si, std::string* resp, unsigned timeout_sec = 0) {
             return detail::inner::http_request("POST", "write", "", lines_.str(), si, resp, timeout_sec);
@@ -133,7 +133,7 @@ namespace influxdb_cpp {
             if((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) return -2;
 
             lines_ << '\n';
-            if(sendto(sock, &lines_.str()[0], lines_.str().length(), 0, (struct sockaddr *)&addr, sizeof(addr)) < (int)lines_.str().length())
+            if(sendto(sock, &lines_.str()[0], lines_.str().length(), 0, reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr)), static_cast<int>(lines_.str().length()))
                 ret = -3;
 
             closesocket(sock);
@@ -189,8 +189,8 @@ namespace influxdb_cpp {
                     out += "+";
                 else {
                     out += '%';
-                    out += to_hex((unsigned char)src[pos] >> 4);
-                    out += to_hex((unsigned char)src[pos] & 0xF);
+                    out += to_hex(static_cast<unsigned char>(src[pos]) >> 4);
+                    out += to_hex(static_cast<unsigned char>(src[pos]) & 0xF);
                 }
                 start = ++pos;
             }
@@ -212,11 +212,11 @@ namespace influxdb_cpp {
             if((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) return -2;
 
             struct timeval timeout;
-            timeout.tv_sec = (long)timeout_sec;
+            timeout.tv_sec = static_cast<long>(timeout_sec);
             timeout.tv_usec = 0;
-            if(setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(timeout)) < 0) return -2;
+            if(setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<char*> (&timeout), sizeof(timeout)) < 0) return -2;
 
-            if(connect(sock, (struct sockaddr*)(&addr), sizeof(addr)) < 0) {
+            if(connect(sock, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) < 0) {
                 closesocket(sock);
                 return -3;
             }
@@ -227,25 +227,25 @@ namespace influxdb_cpp {
                 iv[0].iov_len = snprintf(&header[0], len,
                     "%s /%s?db=%s&u=%s&p=%s&epoch=%s%s HTTP/1.1\r\nHost: %s\r\nContent-Length: %d\r\n\r\n",
                     method, uri, si.db_.c_str(), si.usr_.c_str(), si.pwd_.c_str(), si.precision_.c_str(),
-                    querystring.c_str(), si.host_.c_str(), (int)body.length());
-                if((int)iv[0].iov_len >= len)
+                    querystring.c_str(), si.host_.c_str(), static_cast<int>(body.length()));
+                if(static_cast<int>(iv[0].iov_len) >= len)
                     header.resize(len *= 2);
                 else
                     break;
             }
             iv[0].iov_base = &header[0];
-            iv[1].iov_base = (void*)&body[0];
+            iv[1].iov_base = const_cast<char*>(&body[0]);
             iv[1].iov_len = body.length();
 
-            if(writev(sock, iv, 2) < (int)(iv[0].iov_len + iv[1].iov_len)) {
+            if(writev(sock, iv, 2) < static_cast<int>(iv[0].iov_len + iv[1].iov_len)) {
                 ret_code = -6;
                 goto END;
             }
 
             iv[0].iov_len = len;
 
-#define _NO_MORE() (len >= (int)iv[0].iov_len && \
-    (iv[0].iov_len = recv(sock, &header[0], header.length(), len = 0)) == size_t(-1))
+#define _NO_MORE() (len >= static_cast<int>(iv[0].iov_len) && \
+    (iv[0].iov_len = recv(sock, &header[0], header.length(), len = 0)) == static_cast<size_t>(-1))
 #define _GET_NEXT_CHAR() (ch = _NO_MORE() ? 0 : header[len++])
 #define _LOOP_NEXT(statement) for(;;) { if(!(_GET_NEXT_CHAR())) { ret_code = -7; goto END; } statement }
 #define _UNTIL(c) _LOOP_NEXT( if(ch == c) break; )
@@ -282,7 +282,7 @@ namespace influxdb_cpp {
                                 }
                             case 0:
                                 while(content_length > 0 && !_NO_MORE()) {
-                                    content_length -= (iv[1].iov_len = std::min(content_length, (int)iv[0].iov_len - len));
+                                    content_length -= (iv[1].iov_len = std::min(content_length, static_cast<int>(iv[0].iov_len) - len));
                                     if(resp) resp->append(&header[len], iv[1].iov_len);
                                     len += iv[1].iov_len;
                                 }
