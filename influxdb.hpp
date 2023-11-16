@@ -43,8 +43,25 @@ namespace influxdb_cpp {
         std::string pwd_;
         std::string token_;
         std::string precision_;
-        server_info(const std::string& host, int port, const std::string& db = "", const std::string& usr = "", const std::string& pwd = "", const std::string& token = "", const std::string& precision="ms")
-            : host_(host), port_(port), db_(db), usr_(usr), pwd_(pwd), token_(token), precision_(precision) {}
+        server_info(const std::string& host, int port, const std::string& db = "", const std::string& usr = "", const std::string& pwd = "", const std::string& precision="ms")
+            : host_(host), port_(port), db_(db), usr_(usr), pwd_(pwd), token_(""), precision_(precision) {}
+    };
+
+    struct server_info2 {
+        std::string host_;
+        int port_;
+        std::string db_;
+        std::string usr_;
+        std::string pwd_;
+        std::string token_;
+        std::string precision_;
+        server_info2(const std::string& host, int port, const std::string& db = "", const std::string& token = "", const std::string& precision="ms")
+            : host_(host), port_(port), db_(db), usr_(""), pwd_(""), token_(token), precision_(precision) {};
+        explicit operator server_info() {
+            server_info s1 = server_info(host_, port_, db_, usr_, pwd_ , precision_);
+            s1.token_= token_;
+            return s1;
+            }
     };
     namespace detail {
         struct meas_caller;
@@ -235,7 +252,7 @@ namespace influxdb_cpp {
                         "%s /%s?db=%s&epoch=%s%s HTTP/1.1\r\nHost: %s\r\nAuthorization: Token %s\r\nContent-Length: %d\r\n\r\n",
                         method, uri, si.db_.c_str(), si.precision_.c_str(),
                         querystring.c_str(), si.host_.c_str(), si.token_.c_str(), (int)body.length());
-                        
+
                 if(static_cast<int>(iv[0].iov_len) >= len)
                     header.resize(len *= 2);
                 else
