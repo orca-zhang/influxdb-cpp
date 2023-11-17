@@ -242,13 +242,12 @@ namespace influxdb_cpp {
             header.resize(len = 0x100);
 
             for(;;) {
-                if(si.token_ =="")
-                    iv[0].iov_len = snprintf(&header[0], len,
-                        "%s /%s?db=%s&u=%s&p=%s&epoch=%s%s HTTP/1.1\r\nHost: %s\r\nContent-Length: %d\r\n\r\n",
+                iv[0].iov_len = si.token_ =="" ? 
+                        snprintf(&header[0], len, "%s /%s?db=%s&u=%s&p=%s&epoch=%s%s HTTP/1.1\r\nHost: %s\r\nContent-Length: %d\r\n\r\n",
                         method, uri, si.db_.c_str(), si.usr_.c_str(), si.pwd_.c_str(), si.precision_.c_str(),
-                        querystring.c_str(), si.host_.c_str(), (int)body.length());
-                else
-                    iv[0].iov_len = snprintf(&header[0], len,
+                        querystring.c_str(), si.host_.c_str(), (int)body.length())
+                        :
+                        snprintf(&header[0], len,
                         "%s /%s?db=%s&epoch=%s%s HTTP/1.1\r\nHost: %s\r\nAuthorization: Token %s\r\nContent-Length: %d\r\n\r\n",
                         method, uri, si.db_.c_str(), si.precision_.c_str(),
                         querystring.c_str(), si.host_.c_str(), si.token_.c_str(), (int)body.length());
