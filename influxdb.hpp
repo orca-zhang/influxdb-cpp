@@ -42,8 +42,9 @@ namespace influxdb_cpp {
         std::string usr_;
         std::string pwd_;
         std::string precision_;
-        server_info(const std::string& host, int port, const std::string& db = "", const std::string& usr = "", const std::string& pwd = "", const std::string& precision="ms")
-            : host_(host), port_(port), db_(db), usr_(usr), pwd_(pwd), precision_(precision) {}
+        std::string token_;
+        server_info(const std::string& host, int port, const std::string& db = "", const std::string& usr = "", const std::string& pwd = "", const std::string& precision = "ms", const std::string& token = "")
+            : host_(host), port_(port), db_(db), usr_(usr), pwd_(pwd), precision_(precision), token_(token) {}
     };
     namespace detail {
         struct meas_caller;
@@ -224,10 +225,10 @@ namespace influxdb_cpp {
             header.resize(len = 0x100);
 
             for(;;) {
-                iv[0].iov_len = snprintf(&header[0], len,
-                    "%s /%s?db=%s&u=%s&p=%s&epoch=%s%s HTTP/1.1\r\nHost: %s\r\nContent-Length: %d\r\n\r\n",
-                    method, uri, si.db_.c_str(), si.usr_.c_str(), si.pwd_.c_str(), si.precision_.c_str(),
-                    querystring.c_str(), si.host_.c_str(), static_cast<int>(body.length()));
+                iv[0].iov_len = snprintf(&header[0], len, 
+                    "%s /%s?db=%s%s%s%s%s%s%s%s HTTP/1.1\r\nHost: %s%s%s\r\nContent-Length: %d\r\n\r\n", 
+                    method.c_str(), uri.c_str(), si.db_.c_str(), si.token_.empty() ? "" : "&u=", si.token_.empty() ? "" : si.usr_.c_str(), si.token_.empty() ? "" : "&p=", si.token_.empty() ? "" : si.pwd_.c_str(),
+                    uri == "write" ? "&precision=" : "&epoch=", si.precision_.c_str(), querystring.c_str(), si.host_.c_str(), si.token_.empty() ? "" : "\r\nAuthorization: Token ", si.token_.c_str(), (int)body.length());
                 if(static_cast<int>(iv[0].iov_len) >= len)
                     header.resize(len *= 2);
                 else
