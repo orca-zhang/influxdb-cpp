@@ -227,7 +227,7 @@ namespace influxdb_cpp {
             for(;;) {
                 iv[0].iov_len = snprintf(&header[0], len, 
                     "%s /%s?db=%s%s%s%s%s%s%s%s HTTP/1.1\r\nHost: %s%s%s\r\nContent-Length: %d\r\n\r\n", 
-                    method, uri, si.db_.c_str(), si.token_.empty() ? "" : "&u=", si.token_.empty() ? "" : si.usr_.c_str(), si.token_.empty() ? "" : "&p=", si.token_.empty() ? "" : si.pwd_.c_str(),
+                    method, uri, si.db_.c_str(), !si.token_.empty() ? "" : "&u=", !si.token_.empty() ? "" : si.usr_.c_str(), !si.token_.empty() ? "" : "&p=", !si.token_.empty() ? "" : si.pwd_.c_str(),
                     strcmp(uri, "write") ? "&epoch=" : "&precision=", si.precision_.c_str(), querystring.c_str(), si.host_.c_str(), si.token_.empty() ? "" : "\r\nAuthorization: Token ", si.token_.c_str(), (int)body.length());
                 if(static_cast<int>(iv[0].iov_len) >= len)
                     header.resize(len *= 2);
