@@ -184,7 +184,7 @@ namespace influxdb_cpp {
         };
         inline void inner::url_encode(std::string& out, const std::string& src) {
             size_t pos = 0, start = 0;
-            while((pos = src.find_first_not_of("abcdefghijklmnopqrstuvwxyqABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.~", start)) != std::string::npos) {
+            while((pos = src.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.~", start)) != std::string::npos) {
                 out.append(src.c_str() + start, pos - start);
                 if(src[pos] == ' ')
                     out += "+";
