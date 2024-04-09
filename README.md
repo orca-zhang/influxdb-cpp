@@ -96,12 +96,12 @@ A header-only C++ query & write client for InfluxDB.
 
 - And you can query series by according to the following example.
 
-    ```cpp
-    influxdb_cpp::server_info si("127.0.0.1", 8086, "db", "usr", "pwd");
+  ```cpp
+  influxdb_cpp::server_info si("127.0.0.1", 8086, "db", "usr", "pwd");
 
-    string resp;
-    influxdb_cpp::query(resp, "select * from t", si);
-    ```
+  string resp;
+  influxdb_cpp::query(resp, "select * from t", si);
+  ```
 
 - You can use [xpjson](https://github.com/ez8-co/xpjson) to parse the result refer to [issue #3](https://github.com/orca-zhang/influxdb-cpp/issues/3).
 
@@ -109,6 +109,15 @@ A header-only C++ query & write client for InfluxDB.
 
 - You should **init socket environment by yourself** under Windows.
   - FYR: [MSDN doc for `WSAStartup`](https://msdn.microsoft.com/en-us/library/windows/desktop/ms742213(v=vs.85).aspx)
+
+### **Remarks for Specified Characters in Password**
+
+- You should do URL encode first.
+
+  ``` c++
+  string encoded_pwd;
+  influxdb_cpp::url_encode(encoded_pwd, pwd);
+  ```
  
 ### Return code cheat-sheet
 
@@ -116,8 +125,8 @@ A header-only C++ query & write client for InfluxDB.
 |-|-|-|
 |`send_udp` `post_http`|0|success|
 |`send_udp` `post_http`|-1|convert host address to network order error|
-|`send_udp` `post_http`|-2|socket create error|
-|`send_udp` `post_http`|-3|connect failed|
+|`send_udp` `post_http`|-2|create socket error|
+|`send_udp` `post_http`|-3|`sendto` / `connect` failed|
 |`post_http`|-6|send buffer error|
 |`post_http`|-7|expect a character but read no more|
 |`post_http`|-8|unexpected characters while parsing chunk length|
