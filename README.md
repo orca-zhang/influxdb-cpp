@@ -5,7 +5,7 @@ A header-only C++ query & write client for InfluxDB.
 [![license](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](https://github.com/orca-zhang/influxdb-cpp/blob/master/LICENSE) [![Build Status](https://orca-zhang.semaphoreci.com/badges/influxdb-cpp/branches/master.svg?style=shields)](https://orca-zhang.semaphoreci.com/projects/influxdb-cpp)  [![Build status](https://ci.appveyor.com/api/projects/status/gusrrn0mn67q2yaj?svg=true)](https://ci.appveyor.com/project/orca-zhang/influxdb-cpp)
 
 - Support versions:
-  - InfluxDB v0.9 ~ 1.7
+  - InfluxDB v0.9 ~ 2.0+
   - Check yourself while using other versions.
 
 ### Why use influxdb-cpp?
@@ -109,6 +109,21 @@ A header-only C++ query & write client for InfluxDB.
 
 - You should **init socket environment by yourself** under Windows.
   - FYR: [MSDN doc for `WSAStartup`](https://msdn.microsoft.com/en-us/library/windows/desktop/ms742213(v=vs.85).aspx)
+ 
+### Return code cheat-sheet
+
+|Functions|Code|Description|
+|-|-|-|
+|`send_udp` `post_http`|0|success|
+|`send_udp` `post_http`|-1|convert host address to network order error|
+|`send_udp` `post_http`|-2|socket create error|
+|`send_udp` `post_http`|-3|connect failed|
+|`post_http`|-6|send buffer error|
+|`post_http`|-7|expect a character but read no more|
+|`post_http`|-8|unexpected characters while parsing chunk length|
+|`post_http`|-9|unexpected characters while parsing new line|
+|`post_http`|-10|unexpected null character|
+|`post_http`|-11|unexpected end|
 
 ### TODO
 
