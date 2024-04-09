@@ -110,7 +110,7 @@ A header-only C++ query & write client for InfluxDB.
 - You should **init socket environment by yourself** under Windows.
   - FYR: [MSDN doc for `WSAStartup`](https://msdn.microsoft.com/en-us/library/windows/desktop/ms742213(v=vs.85).aspx)
 
-### **Remarks for Specified Characters in Password**
+### **Remarks for Special Characters in Password**
 
 - You should do URL encode first.
 
