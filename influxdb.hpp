@@ -215,7 +215,8 @@ namespace influxdb_cpp {
             struct timeval timeout;
             timeout.tv_sec = static_cast<long>(timeout_sec);
             timeout.tv_usec = 0;
-            if(setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<char*> (&timeout), sizeof(timeout)) < 0) return -2;
+            if(setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<char*> (&timeout), sizeof(timeout)) < 0 ||
+               setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<char*> (&timeout), sizeof(timeout)) < 0) return -2;
 
             if(connect(sock, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) < 0) {
                 closesocket(sock);
