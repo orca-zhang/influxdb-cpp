@@ -35,6 +35,7 @@
 #endif
 
 namespace influxdb_cpp {
+    static void url_encode(std::string& out, const std::string& src);
     struct server_info {
         std::string host_;
         int port_;
@@ -43,8 +44,12 @@ namespace influxdb_cpp {
         std::string pwd_;
         std::string precision_;
         std::string token_;
+        std::string retention_policy_;
         server_info(const std::string& host, int port, const std::string& db = "", const std::string& usr = "", const std::string& pwd = "", const std::string& precision = "ms", const std::string& token = "")
             : host_(host), port_(port), db_(db), usr_(usr), pwd_(pwd), precision_(precision), token_(token) {}
+        void set_retention_policy(const std::string& rp) {
+            url_encode(retention_policy_, rp);
+        }
     };
     namespace detail {
         struct meas_caller;
@@ -56,8 +61,6 @@ namespace influxdb_cpp {
             static inline unsigned char to_hex(unsigned char x) { return  x > 9 ? x + 55 : x + 48; }
         };
     }
-    static void url_encode(std::string& out, const std::string& src);
-
     inline int query(std::string& resp, const std::string& query, const server_info& si, unsigned timeout_sec = 0) {
         std::string qs("&q=");
         url_encode(qs, query);
@@ -226,10 +229,15 @@ namespace influxdb_cpp {
             header.resize(len = 0x100);
 
             for(;;) {
-                iv[0].iov_len = snprintf(&header[0], len, 
-                    "%s /%s?db=%s%s%s%s%s%s%s%s HTTP/1.1\r\nHost: %s%s%s\r\nContent-Length: %d\r\n\r\n", 
-                    method, uri, si.db_.c_str(), !si.token_.empty() ? "" : "&u=", !si.token_.empty() ? "" : si.usr_.c_str(), !si.token_.empty() ? "" : "&p=", !si.token_.empty() ? "" : si.pwd_.c_str(),
-                    strcmp(uri, "write") ? "&epoch=" : "&precision=", si.precision_.c_str(), querystring.c_str(), si.host_.c_str(), si.token_.empty() ? "" : "\r\nAuthorization: Token ", si.token_.c_str(), (int)body.length());
+                iv[0].iov_len = snprintf(&header[0], len,
+                    "%s /%s?db=%s%s%s%s%s%s%s%s%s%s HTTP/1.1\r\nHost: %s%s%s\r\nContent-Length: %d\r\n\r\n",
+                    method, uri, si.db_.c_str(),
+                    !si.token_.empty() ? "" : "&u=", !si.token_.empty() ? "" : si.usr_.c_str(),
+                    !si.token_.empty() ? "" : "&p=", !si.token_.empty() ? "" : si.pwd_.c_str(),
+                    si.retention_policy_.empty() ? "" : "&rp=", si.retention_policy_.empty() ? "" : si.retention_policy_.c_str(),
+                    strcmp(uri, "write") ? "&epoch=" : "&precision=", si.precision_.c_str(),
+                    querystring.c_str(), si.host_.c_str(),
+                    si.token_.empty() ? "" : "\r\nAuthorization: Token ", si.token_.c_str(), (int)body.length());
                 if(static_cast<int>(iv[0].iov_len) >= len)
                     header.resize(len *= 2);
                 else
